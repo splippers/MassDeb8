@@ -8,6 +8,8 @@ ARENA_HOST="${ARENA_HOST:-127.0.0.1}"
 ARENA_PORT="${ARENA_PORT:-8787}"
 OLLAMA_MODEL="${OLLAMA_MODEL:-llama3}"
 START_ARENA="${START_ARENA:-0}"
+ARENA_DETACH="${ARENA_DETACH:-0}"
+ARENA_KEEPALIVE="${ARENA_KEEPALIVE:-1}"
 
 usage() {
   cat <<EOF
@@ -22,6 +24,8 @@ Defaults:
   ARENA_PORT=$ARENA_PORT
   OLLAMA_MODEL=$OLLAMA_MODEL
   START_ARENA=$START_ARENA   # set to 1 to launch uvicorn locally
+  ARENA_DETACH=$ARENA_DETACH # set to 1 to detach arena (no keepalive loop)
+  ARENA_KEEPALIVE=$ARENA_KEEPALIVE # set to 0 to exit after printing commands
 
 What this does:
   - Optionally starts the Arena server (if START_ARENA=1)
@@ -48,9 +52,15 @@ WS_URL="ws://${ARENA_HOST}:${ARENA_PORT}/ws"
 
 if [[ "$START_ARENA" == "1" ]]; then
   echo "Starting Arena on 0.0.0.0:${ARENA_PORT} ..."
-  "$ROOT/.venv/bin/uvicorn" arena.app:app --host 0.0.0.0 --port "${ARENA_PORT}" &
-  ARENA_PID=$!
-  trap 'kill "$ARENA_PID" >/dev/null 2>&1 || true' EXIT
+  if [[ "$ARENA_DETACH" == "1" ]]; then
+    # fire-and-forget: do not install a trap that kills the server
+    "$ROOT/.venv/bin/uvicorn" arena.app:app --host 0.0.0.0 --port "${ARENA_PORT}" &
+  else
+    # managed background: kill on exit unless keepalive is enabled
+    "$ROOT/.venv/bin/uvicorn" arena.app:app --host 0.0.0.0 --port "${ARENA_PORT}" &
+    ARENA_PID=$!
+    trap 'kill "$ARENA_PID" >/dev/null 2>&1 || true' EXIT
+  fi
 
   # Quick readiness probe (best-effort)
   for _ in $(seq 1 40); do
@@ -79,4 +89,12 @@ echo "  cd \"$ROOT\""
 echo "  .venv/bin/python -m node.node --arena \"$WS_URL\" --name \"Karl Schlegel\" --persona schlegel --ollama-model \"$OLLAMA_MODEL\""
 echo ""
 echo "Then in Chair UI: Connect → Start → Next speaker (as desired)."
+
+if [[ "$START_ARENA" == "1" && "$ARENA_DETACH" != "1" && "$ARENA_KEEPALIVE" == "1" ]]; then
+  echo ""
+  echo "Arena is running. Press CTRL+C to stop it."
+  # Keep the script alive so the EXIT trap doesn't shut down uvicorn immediately.
+  while true; do sleep 3600; done
+fi
+
 exit 0
