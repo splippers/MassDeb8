@@ -84,6 +84,9 @@ async def run_node(
                     persona_quick_facts=persona_quick_facts,
                     seriousness=seriousness,
                     monty_factor=monty_factor,
+                    venue=p.venue,
+                    spiral=float(p.spiral),
+                    event=p.event,
                     topic=p.topic,
                     instruction=p.instruction,
                     transcript_tail=p.transcript_tail,
@@ -94,7 +97,11 @@ async def run_node(
 
                 try:
                     # Simple mapping: more Monty => more temperature; more seriousness => less.
-                    temperature = max(0.2, min(1.2, 0.6 + (monty_factor * 0.5) - (seriousness * 0.2)))
+                    # Spiral increases volatility slightly; still bounded.
+                    temperature = max(
+                        0.2,
+                        min(1.3, 0.55 + (monty_factor * 0.55) - (seriousness * 0.25) + (float(p.spiral) * 0.25)),
+                    )
                     async for delta in adapter.stream_generate(
                         model=ollama_model,
                         prompt=prompt,

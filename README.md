@@ -57,6 +57,7 @@ Run a second node:
 - `docs/ui-spec.md`
 - `docs/security.md`
 - `docs/personas.md`
+- `docs/manifesto.md`
 
 ## CursorRef workflow
 `CursorRef` is treated as **ephemeral** research input. When it contains `personas/*.yaml` blocks, you can safely

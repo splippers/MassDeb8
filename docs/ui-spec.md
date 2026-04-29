@@ -21,6 +21,9 @@ Panels:
   - toggle Ent Mode
   - cadence control (ms per message)
   - tone override (seriousness / monty_factor)
+  - venue selector
+  - event trigger (soft/hard/catastrophic/meta)
+  - spiral slider (escalating absurdity)
 
 - **Transcript**
   - event markers (turn start, forced end, topic changes)

@@ -233,6 +233,42 @@
           </div>
 
           <div class="panel" style="margin: 12px 0">
+            <h2>Venue / Events / Spiral</h2>
+            <div class="content">
+              <div class="row" style="margin-bottom: 8px">
+                <span class="muted" style="width: 56px">venue</span>
+                <select id="venueSel" style="flex: 1; min-width: 200px">
+                  <option>The Crackling Confines of a Crisp Packet</option>
+                  <option>The Void Inside the Boulder (Indiana Jones)</option>
+                  <option>A Moving Toy Train Set</option>
+                  <option>The Misty Summit of Ben Nevis</option>
+                  <option>The First Class Dining Saloon of a Certain White Star Line Vessel</option>
+                </select>
+                <button id="setVenueBtn">Set</button>
+              </div>
+
+              <div class="row" style="margin-bottom: 8px">
+                <span class="muted" style="width: 56px">event</span>
+                <select id="eventKind" style="width: 140px">
+                  <option value="soft">soft</option>
+                  <option value="hard">hard</option>
+                  <option value="catastrophic">catastrophic</option>
+                  <option value="meta">meta</option>
+                </select>
+                <input id="eventLabel" placeholder="e.g. Godzilla Attack" style="flex: 1; min-width: 200px" />
+                <button id="triggerEventBtn" class="danger">Trigger</button>
+              </div>
+
+              <div class="row">
+                <span class="muted" style="width: 56px">spiral</span>
+                <input id="spiral" type="range" min="0" max="1" step="0.05" value="0.15" style="flex: 1" />
+                <span id="spiralVal" class="muted" style="width: 40px; text-align: right">0.15</span>
+                <button id="setSpiralBtn">Apply</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin: 12px 0">
             <h2>Roster</h2>
             <div class="content">
               <div id="roster" class="muted">(none yet)</div>
@@ -333,6 +369,9 @@
         qs("entCadence").value = st.ent_cadence_ms || 200;
         qs("toneSeriousness").value = st.tone_override?.seriousness ?? "";
         qs("toneMonty").value = st.tone_override?.monty_factor ?? "";
+        qs("venueSel").value = st.venue || qs("venueSel").value;
+        qs("spiral").value = st.spiral ?? 0.15;
+        qs("spiralVal").textContent = String(qs("spiral").value);
         if (!qs("chairKey").value) qs("chairKey").value = st.chair_key || "";
       }
 
@@ -389,6 +428,11 @@
         qs("toneMonty").value = "";
         send("chair_set_tone", { seriousness: null, monty_factor: null });
       };
+      qs("setVenueBtn").onclick = () => send("chair_set_venue", { venue: qs("venueSel").value });
+      qs("triggerEventBtn").onclick = () =>
+        send("chair_trigger_event", { kind: qs("eventKind").value, label: qs("eventLabel").value });
+      qs("spiral").oninput = () => (qs("spiralVal").textContent = String(qs("spiral").value));
+      qs("setSpiralBtn").onclick = () => send("chair_set_spiral", { spiral: Number(qs("spiral").value) });
 
       loadState();
       setWs(false);

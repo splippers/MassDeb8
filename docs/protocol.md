@@ -49,6 +49,21 @@ Payload:
 - `seriousness`: number (0..1) or null
 - `monty_factor`: number (0..1) or null
 
+## World control (Manifesto hooks)
+
+### Chair → Arena: `chair_set_venue`
+Payload:
+- `venue`: string (one of the approved venues, or a custom name)
+
+### Chair → Arena: `chair_trigger_event`
+Payload:
+- `kind`: `soft|hard|catastrophic|meta`
+- `label`: string (e.g. `Godzilla Attack`)
+
+### Chair → Arena: `chair_set_spiral`
+Payload:
+- `spiral`: number (0..1), where higher means more surreal escalation is permitted.
+
 ## State machine (current MVP)
 
 - `IDLE`: no speakers or chair connected

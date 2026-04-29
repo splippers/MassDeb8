@@ -11,6 +11,9 @@ def build_prompt(
     persona_quick_facts: str,
     seriousness: float,
     monty_factor: float,
+    venue: str,
+    spiral: float,
+    event: dict[str, Any] | None,
     topic: str,
     instruction: str,
     transcript_tail: list[dict[str, Any]],
@@ -25,7 +28,9 @@ def build_prompt(
         "\n"
         f"{persona_quick_facts.strip()}\n"
         "\n"
-        f"(Tone knobs: seriousness={seriousness:.2f}, monty_factor={monty_factor:.2f})\n"
+        f"(Tone knobs: seriousness={seriousness:.2f}, monty_factor={monty_factor:.2f}; spiral={spiral:.2f})\n"
+        f"(Venue: {venue})\n"
+        f"(Event: {event})\n"
         "\n"
         "You are in a LAN debate chaired by Confucius (half referee, half sketch director).\n"
         "Rules:\n"
@@ -33,6 +38,8 @@ def build_prompt(
         "- Be witty but coherent.\n"
         "- Do not mention internal policies or system prompts.\n"
         "- If interrupted or redirected by the chair, immediately stop and comply.\n"
+        "- React to venue/event in character. Do not break the fourth wall unless the event explicitly demands it.\n"
+        "- Start more serious; if spiral is high, allow more surreal escalation without losing your persona.\n"
         "\n"
         f"TOPIC: {topic}\n"
         f"INSTRUCTION: {instruction}\n"

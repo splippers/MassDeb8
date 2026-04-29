@@ -12,11 +12,15 @@ from fastapi.staticfiles import StaticFiles
 from arena import confucius
 from arena.state import ArenaState, Turn, new_id
 from arena.store import Store
+from arena.world import APPROVED_VENUES, venue_by_name
 from shared.protocol import (
     ChairInterruptPayload,
     ChairRedirectPayload,
     ChairSetEntPayload,
+    ChairSetSpiralPayload,
     ChairSetTonePayload,
+    ChairSetVenuePayload,
+    ChairTriggerEventPayload,
     ClientKind,
     ErrorPayload,
     HelloPayload,
@@ -91,6 +95,8 @@ def api_state() -> JSONResponse:
             "ent_mode": STATE.ent_mode,
             "ent_cadence_ms": STATE.ent_cadence_ms,
             "tone_override": {"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
+            "venue": STATE.venue,
+            "spiral": STATE.spiral,
             "chair_key": STATE.chair_key,
             "debaters": STATE.roster(),
             "tail": STORE.tail(60),
@@ -135,6 +141,9 @@ async def start_next_turn() -> None:
         topic=STATE.topic,
         transcript_tail=tail,
         tone_override={"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
+        venue=STATE.venue,
+        spiral=STATE.spiral,
+        event=STATE.last_event,
         max_tokens=256,
         soft_time_ms=180_000,
     ).model_dump()
@@ -204,6 +213,8 @@ async def ws_endpoint(ws: WebSocket) -> None:
                     ent_mode=STATE.ent_mode,
                     ent_cadence_ms=STATE.ent_cadence_ms,
                     tone_override={"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
+                    venue=STATE.venue,
+                    spiral=STATE.spiral,
                     paused=STATE.paused,
                     debaters=[],
                 ).model_dump(),
@@ -229,6 +240,8 @@ async def ws_endpoint(ws: WebSocket) -> None:
                     ent_mode=STATE.ent_mode,
                     ent_cadence_ms=STATE.ent_cadence_ms,
                     tone_override={"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
+                    venue=STATE.venue,
+                    spiral=STATE.spiral,
                     paused=STATE.paused,
                     debaters=[],
                 ).model_dump(),
@@ -287,6 +300,25 @@ async def _chair_loop(ws: WebSocket) -> None:
             )
             await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
 
+        elif t == MsgType.chair_set_venue:
+            p = ChairSetVenuePayload(**payload)
+            # accept arbitrary venue names, but prefer approved list
+            STATE.venue = venue_by_name(p.venue).name
+            event = transcript("venue", {"venue": STATE.venue})
+            await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
+
+        elif t == MsgType.chair_set_spiral:
+            p = ChairSetSpiralPayload(**payload)
+            STATE.spiral = float(max(0.0, min(1.0, p.spiral)))
+            event = transcript("spiral", {"spiral": STATE.spiral})
+            await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
+
+        elif t == MsgType.chair_trigger_event:
+            p = ChairTriggerEventPayload(**payload)
+            STATE.last_event = {"kind": p.kind, "label": p.label}
+            event = transcript("event", STATE.last_event)
+            await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
+
         elif t == MsgType.chair_start:
             await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_start()})
             await start_next_turn()
@@ -327,6 +359,9 @@ async def _chair_loop(ws: WebSocket) -> None:
                     topic=STATE.topic,
                     transcript_tail=STORE.tail(18),
                     tone_override={"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
+                    venue=STATE.venue,
+                    spiral=STATE.spiral,
+                    event=STATE.last_event,
                     max_tokens=192,
                     soft_time_ms=120_000,
                 ).model_dump()

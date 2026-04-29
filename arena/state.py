@@ -44,7 +44,11 @@ class ArenaState:
     ent_cadence_ms: int = 200
     tone_seriousness: float | None = None
     tone_monty_factor: float | None = None
+    venue: str = "The Crackling Confines of a Crisp Packet"
+    spiral: float = 0.15
     chair_key: str = field(default_factory=lambda: secrets.token_hex(8))
+
+    last_event: dict[str, Any] | None = None
 
     debaters: dict[str, Debater] = field(default_factory=dict)
     active_turn: Turn | None = None
