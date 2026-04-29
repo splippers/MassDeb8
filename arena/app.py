@@ -5,11 +5,19 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from arena import confucius
+from arena.spawn import (
+    list_persona_keys,
+    node_arena_ws,
+    spawn_debater_subprocess,
+    spawn_enabled,
+    validate_persona_key,
+)
 from arena.state import ArenaState, Turn, new_id
 from arena.store import Store
 from arena.world import APPROVED_VENUES, venue_by_name
@@ -37,7 +45,8 @@ from shared.protocol import (
 app = FastAPI()
 
 ROOT = Path(__file__).resolve().parent
-STORE = Store(ROOT.parent / "data" / "arena.sqlite3")
+PROJECT_ROOT = ROOT.parent
+STORE = Store(PROJECT_ROOT / "data" / "arena.sqlite3")
 STATE = ArenaState()
 
 # Connections
@@ -85,6 +94,56 @@ async def broadcast_roster() -> None:
 
 def chair_authed(hello: HelloPayload) -> bool:
     return bool(hello.chair_key) and hello.chair_key == STATE.chair_key
+
+
+class SpawnDebaterIn(BaseModel):
+    chair_key: str
+    name: str = Field(min_length=1, max_length=80)
+    persona: str = Field(min_length=1, max_length=64)
+    ollama_model: str = Field(default="llama3", max_length=120)
+    ollama_base: str = Field(default="http://127.0.0.1:11434", max_length=256)
+
+
+@app.get("/api/personas")
+def api_personas() -> JSONResponse:
+    return JSONResponse({"personas": list_persona_keys(PROJECT_ROOT)})
+
+
+@app.post("/api/spawn_debater")
+def api_spawn_debater(request: Request, body: SpawnDebaterIn) -> JSONResponse:
+    if body.chair_key != STATE.chair_key:
+        return JSONResponse({"ok": False, "error": "bad chair_key"}, status_code=401)
+    if not spawn_enabled():
+        return JSONResponse(
+            {"ok": False, "error": "server-side spawn disabled (set MASSDEB8_DISABLE_SPAWN)"},
+            status_code=403,
+        )
+    persona_key = body.persona.strip()
+    if not validate_persona_key(PROJECT_ROOT, persona_key):
+        return JSONResponse({"ok": False, "error": f"unknown persona: {persona_key}"}, status_code=400)
+    name = body.name.strip()
+    if not name:
+        return JSONResponse({"ok": False, "error": "name required"}, status_code=400)
+    arena_ws = node_arena_ws(request)
+    try:
+        proc = spawn_debater_subprocess(
+            root=PROJECT_ROOT,
+            arena_ws=arena_ws,
+            name=name,
+            persona=persona_key,
+            ollama_model=body.ollama_model.strip(),
+            ollama_base=body.ollama_base.strip(),
+        )
+    except OSError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+    return JSONResponse(
+        {
+            "ok": True,
+            "pid": proc.pid,
+            "arena_ws": arena_ws,
+            "hint": "Node runs on the arena host; Ollama must be reachable at ollama_base from that machine.",
+        }
+    )
 
 
 @app.get("/api/state")

@@ -123,6 +123,11 @@
         color: var(--muted);
         font-size: 12px;
       }
+      .content code {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--accent);
+      }
       #activityStrip {
         font-family: var(--mono);
         font-size: 11px;
@@ -282,6 +287,37 @@
             <h2>Roster</h2>
             <div class="content">
               <div id="roster" class="muted">(none yet)</div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin: 12px 0">
+            <h2>Spawn debater (server)</h2>
+            <div class="content">
+              <p class="muted" style="margin: 0 0 10px 0; line-height: 1.4">
+                Starts <code>python -m node.node</code> on the machine running the arena. Ollama must be reachable at the base URL from
+                <em>that</em> host. Browsers cannot start local processes; this uses the arena as a launcher.
+              </p>
+              <div class="row" style="margin-bottom: 8px">
+                <select id="spawnPersona" style="flex: 1; min-width: 200px">
+                  <option value="">— pick persona —</option>
+                </select>
+              </div>
+              <div class="row" style="margin-bottom: 8px">
+                <input id="spawnName" placeholder="Display name" style="flex: 1; min-width: 200px" />
+              </div>
+              <div class="row" style="margin-bottom: 8px">
+                <input id="spawnModel" placeholder="Ollama model" value="llama3" style="flex: 1; min-width: 140px" />
+                <input
+                  id="spawnOllamaBase"
+                  placeholder="Ollama base URL"
+                  value="http://127.0.0.1:11434"
+                  style="flex: 2; min-width: 200px"
+                />
+              </div>
+              <div class="row">
+                <button id="spawnBtn" class="ok">Spawn</button>
+                <span id="spawnStatus" class="muted" style="flex: 1; min-width: 0"></span>
+              </div>
             </div>
           </div>
 
@@ -449,6 +485,22 @@
         ws.send(JSON.stringify({ type, payload: payload || {} }));
       }
 
+      async function loadPersonas() {
+        try {
+          const res = await fetch("/api/personas");
+          const data = await res.json();
+          const sel = qs("spawnPersona");
+          const preserve = sel.value;
+          const personas = data.personas || [];
+          sel.innerHTML =
+            '<option value="">— pick persona —</option>' +
+            personas.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+          if (preserve && personas.includes(preserve)) sel.value = preserve;
+        } catch {
+          qs("spawnStatus").textContent = "Could not load persona list.";
+        }
+      }
+
       async function loadState() {
         const res = await fetch("/api/state");
         const st = await res.json();
@@ -461,6 +513,7 @@
         qs("spiral").value = st.spiral ?? 0.15;
         qs("spiralVal").textContent = String(qs("spiral").value);
         if (!qs("chairKey").value) qs("chairKey").value = st.chair_key || "";
+        await loadPersonas();
       }
 
       qs("connectBtn").onclick = () => {
@@ -560,6 +613,47 @@
         send("chair_trigger_event", { kind: qs("eventKind").value, label: qs("eventLabel").value });
       qs("spiral").oninput = () => (qs("spiralVal").textContent = String(qs("spiral").value));
       qs("setSpiralBtn").onclick = () => send("chair_set_spiral", { spiral: Number(qs("spiral").value) });
+
+      qs("spawnBtn").onclick = async () => {
+        const status = qs("spawnStatus");
+        const persona = qs("spawnPersona").value;
+        const name = qs("spawnName").value.trim();
+        if (!persona) {
+          status.textContent = "Choose a persona.";
+          return;
+        }
+        if (!name) {
+          status.textContent = "Enter a display name.";
+          return;
+        }
+        const key = qs("chairKey").value;
+        if (!key) {
+          status.textContent = "Paste chair key first.";
+          return;
+        }
+        status.textContent = "Spawning…";
+        try {
+          const res = await fetch("/api/spawn_debater", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chair_key: key,
+              name,
+              persona,
+              ollama_model: qs("spawnModel").value.trim() || "llama3",
+              ollama_base: qs("spawnOllamaBase").value.trim() || "http://127.0.0.1:11434",
+            }),
+          });
+          const j = await res.json().catch(() => ({}));
+          if (!res.ok || !j.ok) {
+            status.textContent = j.error || res.statusText || "Spawn failed.";
+            return;
+          }
+          status.textContent = `Started PID ${j.pid} (${j.arena_ws}). Check roster when the node connects.`;
+        } catch (e) {
+          status.textContent = String(e);
+        }
+      };
 
       loadState();
       setWs(false);
