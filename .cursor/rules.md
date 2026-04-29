@@ -22,8 +22,21 @@ Personas
 - Personas are YAML files in `personas/`.
 - Node must:
   - load persona by key
-  - merge persona constraints with CLI flags
   - include persona `system_prompt` in the model prompt
+
+Persona Generation Rules for MassDeb8
+- Use the persona template in `docs/personas.md` for every philosopher.
+- Base each persona on historically grounded summaries of their works.
+- Avoid quoting copyrighted texts; summarise instead.
+- Exaggerate stylistic traits slightly for comedic effect.
+- Maintain philosophical consistency at all times.
+- Honour the seriousness and monty_factor tone knobs.
+- Ensure each persona reacts differently to:
+  - absurdity
+  - interruptions
+  - Confucius interjections
+  - Ent Mode pacing
+- Never break character unless explicitly instructed by the Arena.
 
 Hybrid tone
 - Implement seriousness/monty_factor as numeric knobs.

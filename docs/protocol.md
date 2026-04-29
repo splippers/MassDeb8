@@ -23,6 +23,7 @@ List of connected debaters.
 
 ### Arena → Node: `turn_assigned`
 Includes `turn_id`, `debater_id`, `instruction`, `topic`, and `transcript_tail`.
+Also includes `tone_override` which may set `seriousness` / `monty_factor` (or null to use persona defaults).
 
 ### Node → Arena: `turn_stream`
 Streaming token deltas: `{turn_id, debater_id, delta}`.
@@ -40,6 +41,13 @@ Canonical append-only transcript events (`speech`, `turn_start`, `turn_forced_en
 
 ### Arena → Chair: `announce`
 Confucius “stage direction” lines and other operator announcements.
+
+## Tone control
+
+### Chair → Arena: `chair_set_tone`
+Payload:
+- `seriousness`: number (0..1) or null
+- `monty_factor`: number (0..1) or null
 
 ## State machine (current MVP)
 

@@ -210,6 +210,29 @@
           </div>
 
           <div class="panel" style="margin: 12px 0">
+            <h2>Tone override</h2>
+            <div class="content">
+              <div class="muted" style="margin-bottom: 8px">
+                Leave blank to use persona defaults.
+              </div>
+              <div class="row" style="margin-bottom: 8px">
+                <span class="muted" style="width: 92px">seriousness</span>
+                <input id="toneSeriousness" type="number" min="0" max="1" step="0.05" placeholder="(default)" style="width: 140px" />
+                <span class="muted">0..1</span>
+              </div>
+              <div class="row" style="margin-bottom: 8px">
+                <span class="muted" style="width: 92px">monty</span>
+                <input id="toneMonty" type="number" min="0" max="1" step="0.05" placeholder="(default)" style="width: 140px" />
+                <span class="muted">0..1</span>
+              </div>
+              <div class="row">
+                <button id="setToneBtn">Apply</button>
+                <button id="clearToneBtn">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin: 12px 0">
             <h2>Roster</h2>
             <div class="content">
               <div id="roster" class="muted">(none yet)</div>
@@ -308,6 +331,8 @@
         qs("topic").value = st.topic || "";
         qs("entEnabled").checked = !!st.ent_mode;
         qs("entCadence").value = st.ent_cadence_ms || 200;
+        qs("toneSeriousness").value = st.tone_override?.seriousness ?? "";
+        qs("toneMonty").value = st.tone_override?.monty_factor ?? "";
         if (!qs("chairKey").value) qs("chairKey").value = st.chair_key || "";
       }
 
@@ -354,6 +379,16 @@
       qs("interruptBtn").onclick = () => send("chair_interrupt", { debater_id: targetSel.value, mode: "hard_stop", reason: "chair" });
       qs("redirectBtn").onclick = () => send("chair_redirect", { debater_id: targetSel.value, redirect: qs("redirectText").value, reason: "chair" });
       qs("setEntBtn").onclick = () => send("chair_set_ent", { enabled: qs("entEnabled").checked, cadence_ms: Number(qs("entCadence").value || 200) });
+      qs("setToneBtn").onclick = () =>
+        send("chair_set_tone", {
+          seriousness: qs("toneSeriousness").value === "" ? null : Number(qs("toneSeriousness").value),
+          monty_factor: qs("toneMonty").value === "" ? null : Number(qs("toneMonty").value),
+        });
+      qs("clearToneBtn").onclick = () => {
+        qs("toneSeriousness").value = "";
+        qs("toneMonty").value = "";
+        send("chair_set_tone", { seriousness: null, monty_factor: null });
+      };
 
       loadState();
       setWs(false);

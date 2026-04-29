@@ -20,6 +20,7 @@ Panels:
 - **Flavour**
   - toggle Ent Mode
   - cadence control (ms per message)
+  - tone override (seriousness / monty_factor)
 
 - **Transcript**
   - event markers (turn start, forced end, topic changes)

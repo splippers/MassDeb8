@@ -42,6 +42,8 @@ class ArenaState:
     paused: bool = False
     ent_mode: bool = True
     ent_cadence_ms: int = 200
+    tone_seriousness: float | None = None
+    tone_monty_factor: float | None = None
     chair_key: str = field(default_factory=lambda: secrets.token_hex(8))
 
     debaters: dict[str, Debater] = field(default_factory=dict)

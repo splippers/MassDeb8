@@ -66,12 +66,24 @@ async def run_node(
                 stop_event = asyncio.Event()
                 current_turn = p.turn_id
 
+                override_ser = (p.tone_override or {}).get("seriousness")
+                override_monty = (p.tone_override or {}).get("monty_factor")
+                seriousness = float(override_ser) if override_ser is not None else float(persona_cfg.tone.get("seriousness", 0.5))
+                monty_factor = float(override_monty) if override_monty is not None else float(persona_cfg.tone.get("monty_factor", 0.5))
+
+                persona_quick_facts = (
+                    f"Persona: {persona_cfg.name} ({persona_cfg.era}; {persona_cfg.school}).\n"
+                    f"Voice: {persona_cfg.style.get('voice','')}\n"
+                    f"Debate tendencies: strengths={persona_cfg.debate_behavior.get('strengths', [])}, weaknesses={persona_cfg.debate_behavior.get('weaknesses', [])}\n"
+                )
+
                 prompt = build_prompt(
                     name=name,
                     persona=persona,
                     persona_system_prompt=persona_cfg.system_prompt or f"You are {persona_cfg.name}.",
-                    seriousness=float(persona_cfg.tone.get("seriousness", 0.5)),
-                    monty_factor=float(persona_cfg.tone.get("monty_factor", 0.5)),
+                    persona_quick_facts=persona_quick_facts,
+                    seriousness=seriousness,
+                    monty_factor=monty_factor,
                     topic=p.topic,
                     instruction=p.instruction,
                     transcript_tail=p.transcript_tail,
@@ -81,12 +93,14 @@ async def run_node(
                 text_parts: list[str] = []
 
                 try:
+                    # Simple mapping: more Monty => more temperature; more seriousness => less.
+                    temperature = max(0.2, min(1.2, 0.6 + (monty_factor * 0.5) - (seriousness * 0.2)))
                     async for delta in adapter.stream_generate(
                         model=ollama_model,
                         prompt=prompt,
                         stop=stop_event,
-                        temperature=float(persona_cfg.constraints.get("temperature", 0.7)),
-                        num_predict=int(persona_cfg.constraints.get("max_tokens", p.max_tokens)),
+                        temperature=temperature,
+                        num_predict=int(p.max_tokens),
                     ):
                         if stop_event.is_set():
                             break

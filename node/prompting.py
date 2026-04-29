@@ -8,6 +8,7 @@ def build_prompt(
     name: str,
     persona: str,
     persona_system_prompt: str,
+    persona_quick_facts: str,
     seriousness: float,
     monty_factor: float,
     topic: str,
@@ -21,6 +22,8 @@ def build_prompt(
     )
     return (
         f"{persona_system_prompt.strip()}\n"
+        "\n"
+        f"{persona_quick_facts.strip()}\n"
         "\n"
         f"(Tone knobs: seriousness={seriousness:.2f}, monty_factor={monty_factor:.2f})\n"
         "\n"

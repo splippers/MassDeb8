@@ -12,9 +12,12 @@ class Persona:
     key: str
     name: str
     short_name: str
-    style: str
+    era: str
+    school: str
+    style: dict[str, Any]
+    philosophy: dict[str, Any]
+    debate_behavior: dict[str, Any]
     system_prompt: str
-    constraints: dict[str, Any]
     tone: dict[str, float]
 
 
@@ -27,9 +30,12 @@ def load_persona(persona_key: str, *, repo_root: Path | None = None) -> Persona:
         key=persona_key,
         name=str(data.get("name") or persona_key),
         short_name=str(data.get("short_name") or data.get("name") or persona_key),
-        style=str(data.get("style") or ""),
+        era=str(data.get("era") or ""),
+        school=str(data.get("school") or ""),
+        style=dict(data.get("style") or {}),
+        philosophy=dict(data.get("philosophy") or {}),
+        debate_behavior=dict(data.get("debate_behavior") or {}),
         system_prompt=str(data.get("system_prompt") or ""),
-        constraints=dict(data.get("constraints") or {}),
         tone=dict(data.get("tone") or {"seriousness": 0.5, "monty_factor": 0.5}),
     )
 

@@ -25,6 +25,7 @@ class MsgType(str, Enum):
     chair_resume = "chair_resume"
     chair_set_topic = "chair_set_topic"
     chair_set_ent = "chair_set_ent"
+    chair_set_tone = "chair_set_tone"
     # turn flow
     turn_assigned = "turn_assigned"
     turn_stream = "turn_stream"
@@ -64,6 +65,7 @@ class WelcomePayload(BaseModel):
     topic: str
     ent_mode: bool
     ent_cadence_ms: int
+    tone_override: dict[str, float | None] = Field(default_factory=dict)
     paused: bool
     debaters: list[DebaterInfo]
 
@@ -79,6 +81,7 @@ class TurnAssignedPayload(BaseModel):
     instruction: str
     topic: str
     transcript_tail: list[dict[str, Any]] = Field(default_factory=list)
+    tone_override: dict[str, float | None] = Field(default_factory=dict)
     max_tokens: int = 256
     soft_time_ms: int = 120_000
 
@@ -120,6 +123,11 @@ class ChairRedirectPayload(BaseModel):
 class ChairSetEntPayload(BaseModel):
     enabled: bool
     cadence_ms: int = 200
+
+
+class ChairSetTonePayload(BaseModel):
+    seriousness: float | None = None
+    monty_factor: float | None = None
 
 
 class ErrorPayload(BaseModel):

@@ -16,6 +16,7 @@ from shared.protocol import (
     ChairInterruptPayload,
     ChairRedirectPayload,
     ChairSetEntPayload,
+    ChairSetTonePayload,
     ClientKind,
     ErrorPayload,
     HelloPayload,
@@ -89,6 +90,7 @@ def api_state() -> JSONResponse:
             "paused": STATE.paused,
             "ent_mode": STATE.ent_mode,
             "ent_cadence_ms": STATE.ent_cadence_ms,
+            "tone_override": {"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
             "chair_key": STATE.chair_key,
             "debaters": STATE.roster(),
             "tail": STORE.tail(60),
@@ -132,6 +134,7 @@ async def start_next_turn() -> None:
         instruction=turn.instruction,
         topic=STATE.topic,
         transcript_tail=tail,
+        tone_override={"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
         max_tokens=256,
         soft_time_ms=180_000,
     ).model_dump()
@@ -200,6 +203,7 @@ async def ws_endpoint(ws: WebSocket) -> None:
                     topic=STATE.topic,
                     ent_mode=STATE.ent_mode,
                     ent_cadence_ms=STATE.ent_cadence_ms,
+                    tone_override={"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
                     paused=STATE.paused,
                     debaters=[],
                 ).model_dump(),
@@ -224,6 +228,7 @@ async def ws_endpoint(ws: WebSocket) -> None:
                     topic=STATE.topic,
                     ent_mode=STATE.ent_mode,
                     ent_cadence_ms=STATE.ent_cadence_ms,
+                    tone_override={"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
                     paused=STATE.paused,
                     debaters=[],
                 ).model_dump(),
@@ -272,6 +277,16 @@ async def _chair_loop(ws: WebSocket) -> None:
                 {"text": f"Confucius says: Ent Mode is now {'ON' if STATE.ent_mode else 'OFF'} ({STATE.ent_cadence_ms}ms)."},
             )
 
+        elif t == MsgType.chair_set_tone:
+            p = ChairSetTonePayload(**payload)
+            STATE.tone_seriousness = None if p.seriousness is None else float(p.seriousness)
+            STATE.tone_monty_factor = None if p.monty_factor is None else float(p.monty_factor)
+            event = transcript(
+                "tone_override",
+                {"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
+            )
+            await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
+
         elif t == MsgType.chair_start:
             await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_start()})
             await start_next_turn()
@@ -311,6 +326,7 @@ async def _chair_loop(ws: WebSocket) -> None:
                     instruction=turn.instruction,
                     topic=STATE.topic,
                     transcript_tail=STORE.tail(18),
+                    tone_override={"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
                     max_tokens=192,
                     soft_time_ms=120_000,
                 ).model_dump()
