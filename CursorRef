@@ -1,0 +1,346 @@
+1. Project vision & tone (docs/vision.md)
+
+High‑level concept
+
+MassDeb8 is a LAN‑hosted debating arena where:
+
+- Debater nodes are Ollama‑backed LLMs running historical personas.
+- A central Arena server orchestrates turns, pacing, and transcripts.
+- A human Chair moderates via a web UI—half serious referee, half Monty Python sketch director.
+- Hybrid tone: real philosophical content, but with absurd interruptions, pacing gags, and Confucius one‑liners.
+
+Design pillars
+
+- Local‑first: everything runs on your LAN; each debater can be on a different box.
+- Performative, not just evaluative: this is theatre, not a benchmark.
+- Hybrid seriousness: arguments can be deep, but the framing is playful.
+- Slow is a feature: “Ent Mode” makes latency feel intentional and funny.
+
+---
+
+2. Architecture spec (docs/architecture.md)
+
+Components
+
+- Arena server
+  - Responsibilities:  
+    - Roster: track connected debater nodes.  
+    - Debate state: idle → setup → running → paused → finished.  
+    - Turn engine: who speaks next, how long, when to interrupt.  
+    - Transcript: canonical log of all utterances + events.  
+    - Chair API/UI: HTTP + WebSocket endpoints.
+
+- Debater node
+  - Responsibilities:  
+    - Connect: register with Arena via WebSocket.  
+    - Persona: load persona config (Nietzsche, Aristotle, etc.).  
+    - Generate: call local Ollama, stream tokens back.  
+    - Obey: start/stop/interrupt commands from Arena.
+
+- Chair UI
+  - Responsibilities:  
+    - Control: start debate, next speaker, interrupt, redirect.  
+    - Monitor: see live transcript and active speaker.  
+    - Flavour: trigger Confucius interjections, toggle Ent Mode.
+
+- Ollama
+  - Responsibilities:  
+    - Serve model completions for each node.  
+    - Stay local to each node (default http://localhost:11434).
+
+Data flow (simplified)
+
+1. Node → Arena:  
+   JOIN → register name, persona, capabilities.  
+2. Chair → Arena:  
+   STARTDEBATE, NEXTSPEAKER, INTERRUPT, REDIRECT.  
+3. Arena → Node:  
+   SPEAK command with prompt/context.  
+4. Node → Arena:  
+   token stream → Arena appends to transcript.  
+5. Arena → Chair UI:  
+   live transcript + state via WebSocket.
+
+---
+
+3. Folder structure (docs/folder-structure.md)
+
+`text
+massdeb8/
+  arena/
+    init.py
+    app.py              # FastAPI/Starlette app
+    ws.py               # WebSocket handlers
+    state.py            # Debate state machine
+    models.py           # Pydantic models / dataclasses
+    transcript.py       # Transcript builder/export
+    confucius.py        # Interjection logic
+    ent_mode.py         # Pacing utilities
+  node/
+    init.py
+    node.py             # CLI entrypoint
+    client.py           # WebSocket client
+    persona_loader.py   # Load persona configs
+    ollama_client.py    # Talk to Ollama
+    pacing.py           # Local pacing knobs
+  personas/
+    nietzsche.yaml
+    aristotle.yaml
+    confucius.yaml
+    ...
+  web/
+    templates/
+      index.html        # Chair UI
+    static/
+      chair.js
+      chair.css
+  config/
+    arena.example.yaml
+    node.example.yaml
+  docs/
+    vision.md
+    architecture.md
+    folder-structure.md
+    protocol.md
+    ui-spec.md
+  tests/
+    testarenastate.py
+    testnodeclient.py
+  requirements.txt
+  pyproject.toml (optional)
+  README.md
+`
+
+---
+
+4. Debate protocol & state machine (docs/protocol.md)
+
+WebSocket message schema (JSON)
+
+- Common fields:
+  - type: message type string.
+  - payload: type‑specific data.
+
+Node → Arena
+
+- JOIN
+  - payload: { "name": str, "persona": str, "version": str }
+- TOKENS
+  - payload: { "speaker": str, "chunk": str, "final": bool }
+- HEARTBEAT
+  - payload: { "name": str }
+- ERROR
+  - payload: { "name": str, "message": str }
+
+Arena → Node
+
+- WELCOME
+  - payload: { "chairkeyrequired": bool }
+- SPEAK
+  - payload: { "prompt": str, "context": [turns], "ent_mode": bool }
+- STOP
+  - payload: { "reason": "interrupt" | "timeout" }
+- PING
+  - payload: {}
+
+Debate state machine
+
+States:
+
+- IDLE
+- READY (nodes joined, chair present)
+- RUNNING
+- PAUSED
+- FINISHED
+
+Transitions:
+
+- IDLE → READY when ≥2 nodes joined.
+- READY → RUNNING on START_DEBATE.
+- RUNNING → PAUSED on PAUSE.
+- PAUSED → RUNNING on RESUME.
+- RUNNING → FINISHED on END_DEBATE.
+
+Turn logic (hybrid style):
+
+- Chair‑driven:  
+  - Chair presses “Next speaker” → Arena selects next from roster (round‑robin or weighted).
+- Optional auto‑advance:  
+  - Timer‑based; when node finishes or timeout, auto‑advance.
+
+---
+
+5. Persona system (docs/personas.md)
+
+Persona file format (personas/nietzsche.yaml)
+
+`yaml
+name: "Friedrich Nietzsche"
+short_name: "Nietzsche"
+style: "Aphoristic, provocative, occasionally mocking."
+system_prompt: |
+  You are Friedrich Nietzsche. Speak in sharp, aphoristic bursts.
+  You challenge morality, herd thinking, and complacency.
+  You are debating other philosophers in front of a live audience.
+  Maintain coherence but allow flashes of wit and theatrical flair.
+constraints:
+  max_tokens: 256
+  temperature: 0.9
+  top_p: 0.9
+`
+
+Hybrid tone knobs
+
+- Seriousness level (0–1):
+  - 0.0: pure absurdist.
+  - 0.5: hybrid.
+  - 1.0: fully serious.
+- Monty factor (0–1):
+  - Controls how often persona injects silly analogies, callbacks to football, etc.
+
+These can be added per persona:
+
+`yaml
+tone:
+  seriousness: 0.5
+  monty_factor: 0.6
+`
+
+Node merges persona config with node CLI flags (e.g. --ollama-model).
+
+---
+
+6. Chair UI spec (docs/ui-spec.md)
+
+Views
+
+- Main Arena view
+  - Panels:
+    - Roster: list of debaters, status (connected, speaking, idle).
+    - Controls:  
+      - Buttons: Start, Pause, Resume, End.  
+      - Turn: Next speaker, Interrupt, Redirect (dropdown).  
+      - Flavour: Trigger Confucius, toggle Ent Mode.
+    - Transcript: scrolling log with:
+      - Speaker name
+      - Timestamp
+      - Text (streamed)
+      - Event markers (interrupts, Confucius, state changes).
+
+UX details
+
+- Streaming:  
+  - Use WebSocket to receive transcript events; append lines as they arrive.
+- Interrupt:  
+  - On click, send INTERRUPT → Arena sends STOP to current node.
+- Redirect:  
+  - After interrupt, choose new speaker from dropdown → Arena sends SPEAK to that node with updated context.
+- Ent Mode toggle:  
+  - Global flag; Arena includes ent_mode: true in SPEAK payload; nodes slow down token emission.
+
+---
+
+7. Security & config (docs/security.md)
+
+LAN assumptions
+
+- Default: trusted LAN, minimal auth.
+- Chair key:
+  - Arena requires a CHAIR_KEY for control actions.
+  - UI includes a simple key prompt; key stored in browser memory only.
+
+Future hardening
+
+- Pairing codes for nodes.
+- Per‑node tokens.
+- Read‑only spectator UI.
+- TLS termination in front of Arena (reverse proxy).
+
+Config examples
+
+config/arena.example.yaml:
+
+`yaml
+host: "0.0.0.0"
+port: 8787
+chair_key: "change-me"
+entmodedefault: false
+maxturntokens: 256
+log_level: "info"
+`
+
+config/node.example.yaml:
+
+`yaml
+arena_ws: "ws://arena-host:8787/ws"
+name: "Nietzsche"
+persona: "nietzsche"
+ollama_url: "http://localhost:11434"
+ollama_model: "llama3"
+entmodelocaldelayms: 80
+`
+
+---
+
+8. Cursor rules (.cursor/rules.md)
+
+`markdown
+
+MassDeb8 – Cursor rules
+
+General
+
+- Language: Python 3.10+.
+- Frameworks: FastAPI or Starlette + Uvicorn for arena/.
+- Async: Use asyncio and websockets/FastAPI WebSocket for all real-time comms.
+- Style: PEP 8, type hints everywhere.
+
+Architecture
+
+- Do not mix Arena and Node logic in the same module.
+- Arena owns:
+  - Web server, WebSocket endpoints, debate state, transcript, Confucius logic.
+- Node owns:
+  - WebSocket client, persona loading, Ollama calls, local pacing.
+
+Messaging
+
+- All WebSocket messages:
+  - JSON with type and payload.
+  - Must conform to docs/protocol.md.
+
+Personas
+
+- Personas are YAML files in personas/.
+- Node must:
+  - Load persona by name.
+  - Merge persona config with CLI/config flags.
+  - Pass system_prompt to Ollama.
+
+Hybrid tone
+
+- Implement seriousness/monty_factor as numeric knobs.
+- Do not hard‑code jokes in core logic; keep them in:
+  - Persona prompts.
+  - arena/confucius.py.
+
+Testing
+
+- Add tests for:
+  - Debate state transitions.
+  - Node reconnect behaviour.
+  - Transcript assembly.
+
+Non‑goals (for now)
+
+- No external DB; in‑memory state is fine.
+- No auth beyond chair key.
+- No cloud dependencies; everything must run on LAN.
+`
+
+---
+
+perhaps you could generate:
+
+- Skeleton arena/app.py, arena/state.py, and node/node.py with all the right hooks.
+- A first Confucius interjection module that leans into the football‑match vibe without overwhelming the serious bits.
