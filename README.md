@@ -57,3 +57,17 @@ Run a second node:
 - `docs/ui-spec.md`
 - `docs/security.md`
 - `docs/personas.md`
+
+## CursorRef workflow
+`CursorRef` is treated as **ephemeral** research input. When it contains `personas/*.yaml` blocks, you can safely
+preview changes without overwriting anything:
+
+```bash
+.venv/bin/python tools/sync_cursorref_personas.py
+```
+
+To actually apply overwrites, use:
+
+```bash
+.venv/bin/python tools/sync_cursorref_personas.py --apply
+```
