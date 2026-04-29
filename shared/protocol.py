@@ -29,10 +29,12 @@ class MsgType(str, Enum):
     chair_set_venue = "chair_set_venue"
     chair_trigger_event = "chair_trigger_event"
     chair_set_spiral = "chair_set_spiral"
+    chair_kick = "chair_kick"
     # turn flow
     turn_assigned = "turn_assigned"
     turn_stream = "turn_stream"
     debater_activity = "debater_activity"
+    session_kick = "session_kick"
     turn_end = "turn_end"
     turn_forced_end = "turn_forced_end"
     # transcript
@@ -136,6 +138,14 @@ class ChairRedirectPayload(BaseModel):
     debater_id: str
     redirect: str
     reason: str | None = None
+
+
+class ChairKickPayload(BaseModel):
+    debater_id: str
+
+
+class SessionKickPayload(BaseModel):
+    reason: str = "kicked"
 
 
 class ChairSetEntPayload(BaseModel):

@@ -23,6 +23,7 @@ from arena.store import Store
 from arena.world import APPROVED_VENUES, venue_by_name
 from shared.protocol import (
     ChairInterruptPayload,
+    ChairKickPayload,
     ChairRedirectPayload,
     ChairSetEntPayload,
     ChairSetSpiralPayload,
@@ -34,6 +35,7 @@ from shared.protocol import (
     ErrorPayload,
     HelloPayload,
     MsgType,
+    SessionKickPayload,
     TurnAssignedPayload,
     TurnEndPayload,
     TurnStreamPayload,
@@ -246,6 +248,26 @@ async def force_end_turn(reason: str) -> None:
     STATE.active_turn = None
 
 
+async def kick_debater(debater_id: str) -> None:
+    """Remove a debater from roster and disconnect their node websocket."""
+    if debater_id not in STATE.debaters:
+        return
+    if STATE.active_turn and STATE.active_turn.debater_id == debater_id:
+        await force_end_turn(reason="kicked")
+    ws = NODES.pop(debater_id, None)
+    STATE.remove_debater(debater_id)
+    if ws:
+        try:
+            await ws_send(ws, MsgType.session_kick, SessionKickPayload(reason="kicked").model_dump())
+            await ws.close(code=4000)
+        except Exception:
+            pass
+    await broadcast_roster()
+    event = transcript("participant_removed", {"debater_id": debater_id})
+    await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
+    await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_kick()})
+
+
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket) -> None:
     await ws.accept()
@@ -434,6 +456,13 @@ async def _chair_loop(ws: WebSocket) -> None:
                 event = transcript("turn_start", {"turn_id": turn.turn_id, "debater_id": p.debater_id, "round": turn.round, "instruction": p.redirect})
                 await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
                 asyncio.create_task(_turn_timeout_watch(turn.turn_id, turn.debater_id, payload2["soft_time_ms"]))
+
+        elif t == MsgType.chair_kick:
+            p = ChairKickPayload(**payload)
+            if p.debater_id not in STATE.debaters:
+                await ws_send(ws, MsgType.error, ErrorPayload(message="Unknown debater_id").model_dump())
+            else:
+                await kick_debater(p.debater_id)
 
         else:
             await ws_send(

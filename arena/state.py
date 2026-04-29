@@ -87,6 +87,13 @@ class ArenaState:
         if debater_id in self.debaters:
             self.debaters[debater_id].connected = connected
 
+    def remove_debater(self, debater_id: str) -> bool:
+        if debater_id not in self.debaters:
+            return False
+        del self.debaters[debater_id]
+        self.speaking_order = [x for x in self.speaking_order if x != debater_id]
+        return True
+
     def next_speaker(self) -> str | None:
         if not self.speaking_order:
             return None

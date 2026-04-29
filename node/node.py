@@ -243,6 +243,11 @@ async def run_node(
                         print(f"[node] forced_end: {reason}")
                         stop_event.set()
 
+                elif t == MsgType.session_kick:
+                    stop_event.set()
+                    print("[node] removed from session by chair")
+                    break
+
                 elif t == MsgType.error:
                     print(f"[node] error: {payload.get('message')}")
         finally:

@@ -26,9 +26,9 @@
       }
       header {
         display: flex;
-        gap: 12px;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
         padding: 14px 16px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         background: rgba(0, 0, 0, 0.25);
@@ -37,11 +37,31 @@
         top: 0;
         z-index: 2;
       }
+      .header-top {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
       header .left {
         display: flex;
         gap: 10px;
         align-items: center;
         min-width: 0;
+      }
+      .pinned-speaker {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--text);
+        word-break: break-word;
+      }
+      .pinned-speaker .muted {
+        margin-right: 6px;
       }
       .badge {
         font-family: var(--mono);
@@ -144,7 +164,7 @@
         line-height: 1.45;
         white-space: pre-wrap;
         overflow: auto;
-        height: calc(100vh - 120px);
+        height: calc(100vh - 220px);
         padding: 12px;
       }
       .pill {
@@ -181,15 +201,21 @@
   </head>
   <body>
     <header>
-      <div class="left">
-        <strong>massdeb8</strong>
-        <span class="badge">Chair Console (Confucius)</span>
-        <span id="wsStatus" class="pill"><span class="dot off"></span><span>disconnected</span></span>
+      <div class="header-top">
+        <div class="left">
+          <strong>massdeb8</strong>
+          <span class="badge">Chair Console (Confucius)</span>
+          <span id="wsStatus" class="pill"><span class="dot off"></span><span>disconnected</span></span>
+        </div>
+        <div class="row">
+          <span class="muted">Chair key</span>
+          <input id="chairKey" placeholder="paste key from /api/state" style="width: 220px" />
+          <button id="connectBtn" class="ok">Connect</button>
+        </div>
       </div>
-      <div class="row">
-        <span class="muted">Chair key</span>
-        <input id="chairKey" placeholder="paste key from /api/state" style="width: 220px" />
-        <button id="connectBtn" class="ok">Connect</button>
+      <div id="pinnedSpeaker" class="pinned-speaker">
+        <span class="muted">Floor</span>
+        <span id="pinnedSpeakerBody">Nobody speaking.</span>
       </div>
     </header>
 
@@ -327,6 +353,7 @@
               <div class="row" style="margin-bottom: 8px">
                 <select id="targetDebater" style="flex: 1; min-width: 200px"></select>
                 <button id="interruptBtn" class="danger">Hard stop</button>
+                <button id="kickBtn" class="danger">Kick</button>
               </div>
               <textarea id="redirectText" placeholder="Redirect instruction (e.g., 'Answer yes/no first, then one syllogism.')" ></textarea>
               <div class="row" style="margin-top: 8px">
@@ -357,6 +384,7 @@
       const wsStatus = qs("wsStatus");
       const wsDot = wsStatus.querySelector(".dot");
       const wsLabel = wsStatus.querySelector("span:last-child");
+      const pinnedBody = qs("pinnedSpeakerBody");
 
       let ws = null;
       let debaters = [];
@@ -365,6 +393,28 @@
       /** @type {Map<string, {phase: string, tick: number, detail: any, at: number}>} */
       let activityByDebater = new Map();
       let activityTickTimer = null;
+      let floorDebaterId = null;
+      let floorTurnId = null;
+
+      function renderPinnedSpeaker() {
+        if (!pinnedBody) return;
+        if (!floorDebaterId) {
+          pinnedBody.textContent = "Nobody speaking.";
+          return;
+        }
+        const who = speakerName(floorDebaterId);
+        const act = activityByDebater.get(floorDebaterId);
+        const streamed = floorTurnId ? (liveBuffers.get(floorTurnId) || "").length : 0;
+        const parts = [`${who}`, "LIVE", `${streamed} chars streamed`];
+        if (act) {
+          parts.push(`${act.phase} · #${act.tick}`);
+          const d = act.detail || {};
+          if (typeof d.chars_out === "number") parts.push(`${d.chars_out} chars (node)`);
+          if (typeof d.elapsed_s === "number") parts.push(`${d.elapsed_s}s`);
+          if (d.ollama_model) parts.push(String(d.ollama_model));
+        }
+        pinnedBody.textContent = parts.join(" · ");
+      }
 
       function renderActivityStrip() {
         if (!activityByDebater.size) {
@@ -527,7 +577,13 @@
         ws = new WebSocket(wsUrl);
         ws.onopen = () => {
           setWs(true);
-          activityTickTimer = setInterval(renderActivityStrip, 1000);
+          floorDebaterId = null;
+          floorTurnId = null;
+          renderPinnedSpeaker();
+          activityTickTimer = setInterval(() => {
+            renderActivityStrip();
+            renderPinnedSpeaker();
+          }, 1000);
           ws.send(JSON.stringify({ type: "hello", payload: { kind: "chair", name: "Confucius", chair_key: qs("chairKey").value } }));
         };
         ws.onclose = () => {
@@ -559,6 +615,7 @@
                 at: Date.now(),
               });
               renderActivityStrip();
+              renderPinnedSpeaker();
             }
           } else if (m.type === "transcript_append") {
             const e = m.payload.event;
@@ -566,13 +623,34 @@
             if (e.kind === "speech") {
               const who = speakerName(e.data.debater_id);
               appendEvent("speech", `[${ts}] ${who}:\\n${e.data.text}\\n`);
+              if (e.data.turn_id && e.data.turn_id === floorTurnId) {
+                floorDebaterId = null;
+                floorTurnId = null;
+                renderPinnedSpeaker();
+              }
               // if we had a live block for this turn, keep it but stop updating it
             } else if (e.kind === "turn_start") {
               const who = speakerName(e.data.debater_id);
               appendEvent("turn_start", `[${ts}] ▶ ${who} begins (${e.data.round})`);
+              floorTurnId = e.data.turn_id;
+              floorDebaterId = e.data.debater_id;
+              renderPinnedSpeaker();
             } else if (e.kind === "turn_forced_end") {
               const who = speakerName(e.data.debater_id);
               appendEvent("turn_forced_end", `[${ts}] ■ ${who} stopped (${e.data.reason})`);
+              if (e.data.turn_id === floorTurnId || e.data.debater_id === floorDebaterId) {
+                floorDebaterId = null;
+                floorTurnId = null;
+                renderPinnedSpeaker();
+              }
+            } else if (e.kind === "participant_removed") {
+              const id = e.data.debater_id;
+              if (id === floorDebaterId) {
+                floorDebaterId = null;
+                floorTurnId = null;
+                renderPinnedSpeaker();
+              }
+              appendEvent("participant_removed", `[${ts}] Removed debater ${id}`);
             } else {
               appendEvent("event", `[${ts}] ${e.kind}: ${JSON.stringify(e.data)}`);
             }
@@ -582,6 +660,9 @@
             liveBuffers.set(turn_id, prev + delta);
             const el = ensureLiveBlock(turn_id, debater_id);
             el.textContent = liveBuffers.get(turn_id);
+            if (debater_id === floorDebaterId && turn_id === floorTurnId) {
+              renderPinnedSpeaker();
+            }
           } else if (m.type === "announce") {
             appendEvent("announce", `[Confucius] ${m.payload.text}`);
           } else if (m.type === "error") {
@@ -596,6 +677,11 @@
       qs("pauseBtn").onclick = () => send("chair_pause");
       qs("resumeBtn").onclick = () => send("chair_resume");
       qs("interruptBtn").onclick = () => send("chair_interrupt", { debater_id: targetSel.value, mode: "hard_stop", reason: "chair" });
+      qs("kickBtn").onclick = () => {
+        const id = targetSel.value;
+        if (!id) return;
+        send("chair_kick", { debater_id: id });
+      };
       qs("redirectBtn").onclick = () => send("chair_redirect", { debater_id: targetSel.value, redirect: qs("redirectText").value, reason: "chair" });
       qs("setEntBtn").onclick = () => send("chair_set_ent", { enabled: qs("entEnabled").checked, cadence_ms: Number(qs("entCadence").value || 200) });
       qs("setToneBtn").onclick = () =>

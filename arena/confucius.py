@@ -30,6 +30,12 @@ REDIRECT_LINES = [
     "Confucius says: Clarify! Imagine your audience is a goose with tenure.",
 ]
 
+KICK_LINES = [
+    "Confucius says: You are excused. The exit is philosophy-shaped.",
+    "Confucius says: Farewell. Your seat has been given to the void.",
+    "Confucius says: The session no longer lists you. Do not take it personally. Or do.",
+]
+
 
 def pick(lines: list[str]) -> str:
     return random.choice(lines)
@@ -53,3 +59,7 @@ def on_timeout() -> str:
 
 def on_redirect() -> str:
     return pick(REDIRECT_LINES)
+
+
+def on_kick() -> str:
+    return pick(KICK_LINES)
