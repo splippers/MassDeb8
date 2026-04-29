@@ -7,6 +7,9 @@ def build_prompt(
     *,
     name: str,
     persona: str,
+    persona_system_prompt: str,
+    seriousness: float,
+    monty_factor: float,
     topic: str,
     instruction: str,
     transcript_tail: list[dict[str, Any]],
@@ -17,8 +20,11 @@ def build_prompt(
         for e in transcript_tail[-14:]
     )
     return (
-        f"You are {name}, roleplaying the philosopher persona '{persona}'.\n"
-        "You are in a comedic LAN debate chaired by Confucius, with Monty Python energy.\n"
+        f"{persona_system_prompt.strip()}\n"
+        "\n"
+        f"(Tone knobs: seriousness={seriousness:.2f}, monty_factor={monty_factor:.2f})\n"
+        "\n"
+        "You are in a LAN debate chaired by Confucius (half referee, half sketch director).\n"
         "Rules:\n"
         "- Stay in character.\n"
         "- Be witty but coherent.\n"

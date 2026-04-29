@@ -44,7 +44,16 @@ Run a second node:
 - Streaming tokens from nodes into a canonical transcript
 - Basic “Ent Mode” pacing knobs
 - Scripted Confucius interjections on key events
+- YAML persona system (`personas/*.yaml`) with seriousness/monty knobs
 
 ## Notes
 - This is an MVP scaffold designed to be extended with richer rulesets, scoring/jury, and better moderation.
 - LAN security is intentionally light for now (single chair key). Add pairing codes/tokens before using on untrusted networks.
+
+## Docs
+- `docs/vision.md`
+- `docs/architecture.md`
+- `docs/protocol.md`
+- `docs/ui-spec.md`
+- `docs/security.md`
+- `docs/personas.md`

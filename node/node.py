@@ -4,11 +4,11 @@ import argparse
 import asyncio
 import json
 import secrets
-from typing import Any
 
 import websockets
 
 from node.ollama_adapter import OllamaAdapter
+from node.persona_loader import load_persona
 from node.prompting import build_prompt
 from shared.protocol import ClientKind, HelloPayload, MsgType, TurnAssignedPayload, TurnEndPayload, TurnStreamPayload, msg
 
@@ -23,6 +23,7 @@ async def run_node(
 ) -> None:
     node_id = f"node_{secrets.token_hex(6)}"
     adapter = OllamaAdapter(base_url=ollama_base)
+    persona_cfg = load_persona(persona)
 
     async with websockets.connect(arena_ws, ping_interval=20, ping_timeout=20, max_size=2**22) as ws:
         await ws.send(
@@ -68,6 +69,9 @@ async def run_node(
                 prompt = build_prompt(
                     name=name,
                     persona=persona,
+                    persona_system_prompt=persona_cfg.system_prompt or f"You are {persona_cfg.name}.",
+                    seriousness=float(persona_cfg.tone.get("seriousness", 0.5)),
+                    monty_factor=float(persona_cfg.tone.get("monty_factor", 0.5)),
                     topic=p.topic,
                     instruction=p.instruction,
                     transcript_tail=p.transcript_tail,
@@ -81,7 +85,8 @@ async def run_node(
                         model=ollama_model,
                         prompt=prompt,
                         stop=stop_event,
-                        num_predict=p.max_tokens,
+                        temperature=float(persona_cfg.constraints.get("temperature", 0.7)),
+                        num_predict=int(persona_cfg.constraints.get("max_tokens", p.max_tokens)),
                     ):
                         if stop_event.is_set():
                             break

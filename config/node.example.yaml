@@ -1,0 +1,6 @@
+arena_ws: "ws://arena-host:8787/ws"
+name: "Nietzsche"
+persona: "nietzsche"
+ollama_url: "http://localhost:11434"
+ollama_model: "llama3"
+ent_mode_local_delay_ms: 80
