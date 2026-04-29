@@ -313,6 +313,7 @@
       let ws = null;
       let debaters = [];
       let liveBuffers = new Map(); // turn_id -> current text (streaming)
+      let liveEls = new Map(); // turn_id -> DOM element
 
       function setWs(connected) {
         wsDot.classList.toggle("on", connected);
@@ -322,6 +323,50 @@
 
       function appendLine(line) {
         transcriptEl.textContent += line + "\n";
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+      }
+
+      function speakerName(debaterId) {
+        const d = debaters.find((x) => x.debater_id === debaterId);
+        return d ? d.name : debaterId;
+      }
+
+      function ensureLiveBlock(turnId, debaterId) {
+        if (liveEls.has(turnId)) return liveEls.get(turnId);
+
+        const wrap = document.createElement("div");
+        wrap.style.border = "1px solid rgba(255,255,255,0.10)";
+        wrap.style.borderRadius = "10px";
+        wrap.style.padding = "10px";
+        wrap.style.margin = "10px 0";
+        wrap.dataset.turnId = turnId;
+
+        const title = document.createElement("div");
+        title.style.fontFamily = "var(--mono)";
+        title.style.color = "var(--muted)";
+        title.textContent = `${speakerName(debaterId)} (live)`;
+
+        const body = document.createElement("div");
+        body.style.whiteSpace = "pre-wrap";
+        body.style.fontFamily = "var(--mono)";
+        body.style.marginTop = "8px";
+        body.textContent = "";
+
+        wrap.appendChild(title);
+        wrap.appendChild(body);
+        transcriptEl.appendChild(wrap);
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+
+        liveEls.set(turnId, body);
+        return body;
+      }
+
+      function appendEvent(kind, text) {
+        const line = document.createElement("div");
+        line.style.fontFamily = "var(--mono)";
+        line.style.whiteSpace = "pre-wrap";
+        line.textContent = text;
+        transcriptEl.appendChild(line);
         transcriptEl.scrollTop = transcriptEl.scrollHeight;
       }
 
@@ -393,19 +438,30 @@
             renderRoster();
           } else if (m.type === "transcript_append") {
             const e = m.payload.event;
-            appendLine(`[${new Date(e.ts_ms).toLocaleTimeString()}] ${e.kind}: ${JSON.stringify(e.data)}`);
+            const ts = new Date(e.ts_ms).toLocaleTimeString();
+            if (e.kind === "speech") {
+              const who = speakerName(e.data.debater_id);
+              appendEvent("speech", `[${ts}] ${who}:\\n${e.data.text}\\n`);
+              // if we had a live block for this turn, keep it but stop updating it
+            } else if (e.kind === "turn_start") {
+              const who = speakerName(e.data.debater_id);
+              appendEvent("turn_start", `[${ts}] ▶ ${who} begins (${e.data.round})`);
+            } else if (e.kind === "turn_forced_end") {
+              const who = speakerName(e.data.debater_id);
+              appendEvent("turn_forced_end", `[${ts}] ■ ${who} stopped (${e.data.reason})`);
+            } else {
+              appendEvent("event", `[${ts}] ${e.kind}: ${JSON.stringify(e.data)}`);
+            }
           } else if (m.type === "turn_stream") {
             const { turn_id, debater_id, delta } = m.payload;
             const prev = liveBuffers.get(turn_id) || "";
             liveBuffers.set(turn_id, prev + delta);
-            // keep UI lightweight: only show occasional stream updates
-            if ((prev.length + delta.length) % 120 < delta.length) {
-              appendLine(`[stream ${turn_id} ${debater_id}] ${liveBuffers.get(turn_id).slice(-240)}`);
-            }
+            const el = ensureLiveBlock(turn_id, debater_id);
+            el.textContent = liveBuffers.get(turn_id);
           } else if (m.type === "announce") {
-            appendLine(`[announce] ${m.payload.text}`);
+            appendEvent("announce", `[Confucius] ${m.payload.text}`);
           } else if (m.type === "error") {
-            appendLine(`[error] ${m.payload.message}`);
+            appendEvent("error", `[error] ${m.payload.message}`);
           }
         };
       };

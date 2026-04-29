@@ -329,6 +329,9 @@ async def _chair_loop(ws: WebSocket) -> None:
         elif t == MsgType.chair_pause:
             STATE.paused = True
             await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: PAUSE. Reflect on your choices."})
+            # Pause means "shuddering halt": stop any in-flight turn immediately.
+            if STATE.active_turn and not STATE.active_turn.forced_end.is_set():
+                await force_end_turn(reason="paused")
 
         elif t == MsgType.chair_resume:
             STATE.paused = False
@@ -393,6 +396,8 @@ async def _node_loop(ws: WebSocket, debater_id: str) -> None:
             if not STATE.active_turn or STATE.active_turn.turn_id != p.turn_id:
                 continue
             if STATE.active_turn.forced_end.is_set():
+                continue
+            if STATE.paused:
                 continue
             STATE.active_turn.buffer += p.delta
             # keep the chair updated live
