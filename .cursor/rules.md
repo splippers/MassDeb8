@@ -1,5 +1,8 @@
 MassDeb8 – Cursor rules
 
+Governance
+- Read `docs/manifesto.md` as the MassDeb8 theatrical/system doctrine for tone and escalation intent.
+
 General
 - Language: Python 3.10+.
 - Frameworks: FastAPI + Uvicorn for `arena/`.

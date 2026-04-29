@@ -72,3 +72,12 @@ To actually apply overwrites, use:
 ```bash
 .venv/bin/python tools/sync_cursorref_personas.py --apply
 ```
+
+## Two-node demo (Socrates vs Karl Schlegel)
+
+```bash
+chmod +x scripts/demo_socrates_vs_schlegel.sh
+START_ARENA=1 ./scripts/demo_socrates_vs_schlegel.sh
+```
+
+Then open the Chair UI and connect using the `chair_key` from `/api/state`.

@@ -13,35 +13,40 @@ APPROVED_VENUES: list[Venue] = [
     Venue(
         name="The Void Inside the Boulder (Indiana Jones)",
         description=(
-            "Echoing emptiness; dust motes of forgotten civilizations; occasional rolling. "
+            "Echoing, unstable, occasionally rolling. "
+            "Heidegger becomes dangerously coherent. "
             "Everyone must speak as if shouting across an enormous hollow stone."
         ),
     ),
     Venue(
         name="A Moving Toy Train Set",
         description=(
-            "Constant motion through miniature landscapes. Sudden derailments. "
+            "Constant motion, derailments possible. "
+            "Archimedes becomes obsessed with leverage. "
             "Arguments should wobble, recover, and occasionally fly off the tracks."
         ),
     ),
     Venue(
-        name="The Crackling Confines of a Crisp Packet",
+        name="Inside a Crisp Packet",
         description=(
-            "Acoustically hostile; salt-and-vinegar thundercrackle with every movement. "
+            "Thunderous crackling, distorted acoustics. "
+            "Wittgenstein questions the meaning of 'crisp'. "
             "Treat the environment as noisy and ridiculous, but stay in character."
         ),
     ),
     Venue(
-        name="The Misty Summit of Ben Nevis",
+        name="Summit of Ben Nevis (Misty, Echoing)",
         description=(
-            "Wind-whipped, cold, visibility questionable. "
+            "Wind interference, low visibility. "
+            "Schopenhauer complains about the Will and the weather. "
             "Treat pauses and uncertainty as mist and gusts interrupting your thought."
         ),
     ),
     Venue(
-        name="The First Class Dining Saloon of a Certain White Star Line Vessel",
+        name="First Class Dining Saloon of a White Star Line Vessel",
         description=(
-            "Elegant wood, polite conversation, and a faint sense of impending doom. "
+            "Elegance + impending doom. "
+            "Plato discusses the Form of Iceberg. "
             "Maintain decorum while the universe hints at catastrophe."
         ),
     ),
