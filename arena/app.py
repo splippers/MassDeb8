@@ -22,6 +22,7 @@ from shared.protocol import (
     ChairSetVenuePayload,
     ChairTriggerEventPayload,
     ClientKind,
+    DebaterActivityPayload,
     ErrorPayload,
     HelloPayload,
     MsgType,
@@ -146,6 +147,7 @@ async def start_next_turn() -> None:
         event=STATE.last_event,
         max_tokens=256,
         soft_time_ms=180_000,
+        activity_ping_ms=750,
     ).model_dump()
     await ws_send(ws, MsgType.turn_assigned, payload)
 
@@ -367,6 +369,7 @@ async def _chair_loop(ws: WebSocket) -> None:
                     event=STATE.last_event,
                     max_tokens=192,
                     soft_time_ms=120_000,
+                    activity_ping_ms=750,
                 ).model_dump()
                 await ws_send(ws_node, MsgType.turn_assigned, payload2)
                 event = transcript("turn_start", {"turn_id": turn.turn_id, "debater_id": p.debater_id, "round": turn.round, "instruction": p.redirect})
@@ -391,7 +394,13 @@ async def _node_loop(ws: WebSocket, debater_id: str) -> None:
             t = None
         payload = obj.get("payload") or {}
 
-        if t == MsgType.turn_stream:
+        if t == MsgType.debater_activity:
+            p = DebaterActivityPayload(**payload)
+            if p.debater_id != debater_id:
+                continue
+            await broadcast_to_chairs(MsgType.debater_activity, p.model_dump())
+
+        elif t == MsgType.turn_stream:
             p = TurnStreamPayload(**payload)
             if not STATE.active_turn or STATE.active_turn.turn_id != p.turn_id:
                 continue

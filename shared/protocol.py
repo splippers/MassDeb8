@@ -32,6 +32,7 @@ class MsgType(str, Enum):
     # turn flow
     turn_assigned = "turn_assigned"
     turn_stream = "turn_stream"
+    debater_activity = "debater_activity"
     turn_end = "turn_end"
     turn_forced_end = "turn_forced_end"
     # transcript
@@ -92,12 +93,21 @@ class TurnAssignedPayload(BaseModel):
     event: dict[str, Any] | None = None
     max_tokens: int = 256
     soft_time_ms: int = 120_000
+    activity_ping_ms: int = 750
 
 
 class TurnStreamPayload(BaseModel):
     turn_id: str
     debater_id: str
     delta: str
+
+
+class DebaterActivityPayload(BaseModel):
+    debater_id: str
+    turn_id: str | None = None
+    phase: str  # generating|idle
+    tick: int = 0
+    detail: dict[str, Any] = Field(default_factory=dict)
 
 
 class TurnEndPayload(BaseModel):
