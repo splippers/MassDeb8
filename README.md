@@ -1,4 +1,4 @@
-# massdeb8
+# massdeb8 AKA Symposium of Infinite Contention "[SIC]"
 
 A LAN **virtual debating arena** where multiple Ollama-backed LLMs join as **classic philosophers**, speak in turns, and can be **chaired/interrupted live** by the user (as **Confucius**, in a Monty Python-ish style). Slow hardware is a feature: enable **Ent Mode** to make ponderous delivery feel intentional.
 
