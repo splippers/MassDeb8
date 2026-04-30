@@ -2,6 +2,10 @@
 
 A LAN **virtual debating arena** where multiple Ollama-backed LLMs join as **classic philosophers**, speak in turns, and can be **chaired/interrupted live** by the user (as **Confucius**, in a Monty Python-ish style). Slow hardware is a feature: enable **Ent Mode** to make ponderous delivery feel intentional.
 
+This project is influenced by Monty Python, specifically The Philosophers' Football Match:
+
+https://youtu.be/QXOKsJViHtY?si=7imj_P3lQog5hRae
+
 ## Quick start (local machine)
 
 Prereqs:
