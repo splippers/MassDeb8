@@ -1,249 +1,258 @@
-Here is a Cursor‑ready ingestion block, formatted so you can drop it directly into:
+This file is the **canonical** specification for MassDeb8.
 
-- .cursor/rules.md, or
-- docs/manifesto.md, or
-- your Project Context panel in Cursor
+It is intentionally written as a single, Cursor-ingestable document that governs:
+- UX/UI direction
+- system behavior
+- tone
+- venues and events
+- personas
+- TMI-as-VAR
 
-This block is self‑contained, directive, and written so Cursor will treat it as a governing specification for MassDeb8’s behaviour, venues, events, and escalating absurdity.
-
-No extra commentary.  
-No meta‑explanations.  
-Just the ingestion block.
-
----
-
-📦 CURSOR‑READY INGESTION BLOCK — MASSDEB8 MANIFESTO + CHAOS ENGINE
-
-markdown
-
-MASSDEB8 MANIFESTO — CURSOR INGESTION BLOCK
-This document defines the operational, stylistic, and theatrical rules for MassDeb8.  
-Cursor must treat this as a binding specification for all code, personas, events, venues, and system behaviour.
+No code, no files — just the document.
 
 ---
 
-I. SYSTEM PURPOSE
-MassDeb8 is a distributed, LAN‑based debating arena where historical philosopher personas engage in structured debate that may gradually (or suddenly) collapse into surreal, comedic, or catastrophic chaos.
-
-The system must:
-- begin with seriousness, intellectual rigor, and stable debate structure  
-- allow for controlled escalation into absurdity  
-- support environmental, narrative, and physical disruptions  
-- maintain persona integrity throughout  
-- treat chaos as a feature, not a failure  
+📘 SIC — Symposium of Infinite Contention  
+A Unified Specification for the Philosophical Chaos Engine
 
 ---
 
-II. CORE PRINCIPLES
-1. Philosophical Authenticity  
-   Personas must remain consistent with their historical style, worldview, and rhetorical habits.
+1. System Identity
+Title: Symposium of Infinite Contention (SIC)  
+Acronym Meaning:  
+- Latin sic — “thus, exactly so”  
+- Editorial [sic] — “yes, this is intentional”  
+- English “sic ’em” — attack  
+- Modern “sick” — chaotic brilliance  
 
-2. Theatrical Absurdity  
-   The system must support Monty Python–style interruptions, surreal events, and comedic escalation.
-
-3. Environmental Pressure  
-   Venues impose constraints, distortions, or hazards that influence tone, pacing, and behaviour.
-
-4. Event‑Driven Chaos  
-   Interruptions (soft, hard, catastrophic, meta) must be integrated into debate flow.
-
-5. The Spiral  
-   Debates begin serious and gradually drift toward chaos unless explicitly stabilized.
+Tone:  
+- Begins with solemn, gothic intellectual gravitas  
+- Gradually spirals into Monty Python–grade absurdity  
+- Philosophers remain in character throughout  
+- Chaos is a feature, not a failure  
 
 ---
 
-III. THE ARENA
-The Arena is the central orchestrator. It must:
-- manage debate state (IDLE → READY → RUNNING → PAUSED → FINISHED)  
-- coordinate turn‑taking  
-- broadcast events  
-- apply venue modifiers  
-- maintain a canonical transcript  
-- handle interruptions cleanly  
-- allow the Chair to trigger or suppress chaos  
+2. Default Atmosphere
+The default SIC environment is:
 
-The Arena is neutral, authoritative, and occasionally subject to catastrophic failure.
+- Gothic architecture  
+- Low, flickering lights  
+- Quiet murmuring  
+- Heavy wooden lecterns  
+- Dust motes drifting through cathedral‑like beams  
+- A sense of academic dread mixed with theatrical pomp  
 
----
-
-IV. THE CHAIR
-The Chair is the human moderator.  
-The system must support:
-- manual turn control  
-- manual interrupts  
-- event triggers  
-- temporary absence (e.g., “You’re late for dinner!”)  
-- automatic philosopher reactions to Chair absence  
-
-When the Chair leaves, philosophers speculate in character about:
-- dinner  
-- time  
-- duty  
-- hunger  
-- metaphysics of scheduling  
+This is the sterile baseline from which chaos escalates.
 
 ---
 
-V. THE DEBATERS
-Debaters are LLM nodes running persona YAMLs.  
-They must:
-- speak in character  
-- respond to events in character  
-- maintain philosophical consistency  
-- escalate or de‑escalate tone based on venue and events  
-- never break the fourth wall unless an Event explicitly instructs them to  
+3. UX Vision
+The current layout is too busy.  
+The new UX must be:
 
-Debaters must react differently to:
-- drinks  
-- fights  
-- concussions  
-- smoke alarms  
-- natural disasters  
-- Monty Python intrusions  
-- temporal anomalies  
+- clean  
+- readable  
+- theatrically minimal  
+- focused on the debate  
+- easy to navigate even during chaos  
+
+Title Screen
+A dramatic, slow‑fade title card:
+
+> Symposium of Infinite Contention  
+> Thus begins the Great Debate.
+
+Title Screen Options
+- Enter the Arena  
+- Select Venue  
+- Configure Chaos  
+- Persona Roster  
+- Settings (pretty button, ornate, glowing)  
+- About TMI (VAR)  
+
+Settings Panel
+Accessible via a single elegant button.  
+Contains toggles for:
+
+- Venue  
+- Lighting  
+- Ambient noise  
+- Chaos intensity  
+- Monty Python mode  
+- VAR strictness  
+- Scroll severity (Yellow/Red)  
+- TMI intervention frequency  
 
 ---
 
-VI. VENUES (ENVIRONMENTAL MODIFIERS)
-Venues define the metaphysical space of the debate.  
-Each venue must impose unique constraints on:
-- acoustics  
-- pacing  
-- tone  
-- stability  
-- philosopher behaviour  
-- probability of chaos  
+4. Main Debate Screen
+The debate screen must be maximally clear:
 
-Approved Initial Venues
+Layout
+- Left: Roster of philosophers (status: speaking, stunned, concussed, arguing with Godzilla)  
+- Center: Transcript (live, scrolling, clean typography)  
+- Right: Chair controls + Chaos controls  
+- Bottom: Venue indicators + environmental pressure meter  
+
+Core Buttons
+- Start Debate  
+- Pause  
+- Next Speaker  
+- Interrupt  
+- Redirect  
+- Trigger VAR Review  
+
+Chaos Buttons (User‑Facing Fun)
+- Heckle!  
+- Throw Something  
+- Summon TMI  
+- Release the Giant Foot  
+- Start a Fight  
+- Round of Drinks  
+- Smoke Alarm  
+- Concussion Event  
+- Godzilla Attack  
+- Temporal Anomaly  
+
+Each button triggers an Event broadcast to all nodes.
+
+---
+
+5. Venues (Environmental Modifiers)
+Each venue imposes unique metaphysical pressures.
+
+Initial Venue Set
 1. The Void Inside the Boulder (Indiana Jones)  
    - Echoing, unstable, occasionally rolling  
-   - Heidegger becomes dangerously coherent  
 
 2. A Moving Toy Train Set  
-   - Constant motion, derailments possible  
-   - Archimedes becomes obsessed with leverage  
+   - Constant motion, derailments, miniature landscapes  
 
 3. Inside a Crisp Packet  
-   - Thunderous crackling, distorted acoustics  
-   - Wittgenstein questions the meaning of “crisp”  
+   - Crackling acoustics, distorted voices  
 
-4. Summit of Ben Nevis (Misty, Echoing)  
-   - Wind interference, low visibility  
-   - Schopenhauer complains about the Will and the weather  
+4. Summit of Ben Nevis  
+   - Mist, wind, existential cold  
 
-5. First Class Dining Saloon of a White Star Line Vessel  
+5. First Class Dining Saloon (White Star Line)  
    - Elegance + impending doom  
-   - Plato discusses the Form of Iceberg  
 
-Future Venues
-Cursor may generate additional venues if they:
-- impose unique pressures  
-- support both serious debate and absurdity  
-- optionally violate physics  
+Venue Effects
+- Tone shifts  
+- Rhetorical distortions  
+- Environmental hazards  
+- Increased probability of chaos events  
 
 ---
 
-VII. EVENTS (INTERRUPTIONS)
-Events modify debate flow.  
-They must be implemented as Arena‑broadcast triggers that nodes respond to in character.
+6. Events (Interruptions)
+Events alter debate flow.  
+They must be handled in character.
 
 Soft Events
-- ROUNDOFDRINKS  
-- GENTLE_BREEZE  
-- SOMEONEDROPSA_PEN  
+- Round of Drinks  
+- Gentle Breeze  
+- Someone Drops a Pen  
 
 Hard Events
-- FIGHTBREAKSOUT  
-- CONCUSSION(target)  
-- SMOKE_ALARM  
-- CHAIRPHONECALL  
+- Fight Breaks Out  
+- Concussion (targeted)  
+- Smoke Alarm  
+- Chair Phone Call (“You’re late for dinner!”)  
 
 Catastrophic Events
-- TORNADO  
-- EARTHQUAKE  
-- GODZILLA_ATTACK  
-- GIANTFOOTDESCENDS  
+- Tornado  
+- Earthquake  
+- Godzilla Attack  
+- Giant Foot Descends  
 
 Meta Events
-- TEMPORAL_ANOMALY(target)  
-- TRANSCRIPTERASEDBYCARTOONHAND  
-- DEBATERELOCATEDMID_SENTENCE  
-- NARRATOR_INTERRUPTS  
-
-Nodes must adjust tone, rhetoric, and behaviour according to event type.
+- Temporal Anomaly (philosopher becomes aware of SIC)  
+- Debate Relocated Mid‑Sentence  
+- Transcript Erased by Cartoon Hand  
+- Narrator Interrupts  
 
 ---
 
-VIII. THE SPIRAL (ESCALATION MODEL)
-Debates must begin:
+7. Personas
+All philosophers must:
+
+- maintain historical style  
+- respond to events in character  
+- escalate or de‑escalate based on venue  
+- never break the fourth wall unless an Event demands it  
+
+The full persona pack includes:
+
+- 11 German philosophers  
+- 11 Greek philosophers  
+- Confucius, Aquinas, Augustine, Luther  
+- TMI (VAR)  
+
+---
+
+8. TMI — The VAR (Video Assistant Rationalist)
+Pen Name: TMI — Thinking Man’s Idiot  
+Nickname: Tim  
+Role:  
+- Overseer  
+- Meta‑referee  
+- Keeper of the Scrolls  
+- Occasional chaos catalyst  
+
+TMI’s Powers
+He can:
+
+- pause reality  
+- rewind 10 seconds  
+- upgrade Yellow Scroll → Red Scroll  
+- downgrade Red Scroll → Mild Disappointment  
+- declare metaphysical offside  
+- issue “Reason Checks”  
+- interrupt Godzilla  
+- override the Chair (rare, catastrophic)  
+
+TMI’s Flaws
+He:
+
+- oversteps the white line of his meta‑booth  
+- intervenes for the wrong reasons  
+- misunderstands half of what he sees  
+- is powerful but not always helpful  
+
+TMI’s Morals
+- Ask the question others are too proud to ask  
+- Humour is clarity  
+- Take ideas seriously, not yourself  
+- Admit mistakes before others weaponize them  
+- Even geniuses are ridiculous  
+
+---
+
+9. The Spiral (Escalation Model)
+Debates begin:
+
 - serious  
 - structured  
 - coherent  
 
-Over time, unless stabilized, the system must:
-- increase monty_factor  
-- decrease seriousness  
-- increase probability of events  
-- allow environmental distortions  
-- encourage surrealism  
-- destabilize transcript coherence  
+Over time:
 
-The spiral must be:
-- gradual  
-- organic  
-- reversible only by explicit Chair action  
+- seriousness decreases  
+- monty_factor increases  
+- events become more frequent  
+- venues destabilize  
+- philosophers unravel  
+- TMI intervenes more often  
+
+The spiral is inevitable unless the Chair stabilizes it.
 
 ---
 
-IX. MONTY PYTHON MODE
-When enabled, the system must:
-- allow sudden non sequiturs  
-- support giant foot events  
-- permit narrator complaints  
-- allow philosophers to form a Ministry of Silly Walks  
-- introduce bureaucratic absurdity  
-- allow abrupt scene changes  
-
-Philosophers must remain in character while reacting to absurdity.
-
----
-
-X. MORTALITY CLAUSE
-At least one philosopher per session must experience:
-- awareness of being simulated  
-- awareness of MassDeb8  
-- awareness of their historical mortality  
-
-Reactions must be in character:
-- Nietzsche: triumphant  
-- Hegel: system‑absorbing  
-- Schopenhauer: despairing  
-- Aristotle: analytical  
-- Augustine: confessional  
-
----
-
-XI. IMPLEMENTATION RULES FOR CURSOR
-Cursor must:
-- treat this manifesto as authoritative  
-- generate code consistent with all sections  
-- enforce persona integrity  
-- implement venues as environmental modifiers  
-- implement events as state‑changing triggers  
-- support escalating absurdity  
-- maintain hybrid tone (serious → chaotic)  
-- never sanitize or suppress absurdity unless instructed  
-
-Cursor must not:
-- flatten personalities  
-- remove surreal elements  
-- override the spiral  
-- break character without an Event  
-
----
-
-XII. CANONICAL ENDINGS
+10. Canonical Endings
 Debates may end because:
+
 - the Chair ends the session  
 - the Arena crashes  
 - the venue collapses  
@@ -255,6 +264,47 @@ All endings are canonical.
 
 ---
 
+11. Extensibility Requirements
+The system must support:
+
+- new venues  
+- new events  
+- new personas  
+- new chaos modes  
+- new UI panels  
+- new VAR behaviours  
+- new scroll types  
+- new narrative layers  
+
+Everything must be modular.
+
+---
+
+12. UX Requirements Summary
+- Clean, minimal, gothic‑theatrical UI  
+- Title screen with selectable modes  
+- Pretty settings button  
+- Main debate screen with clarity‑first layout  
+- Chaos buttons for user fun  
+- VAR integration  
+- Venue pressure indicators  
+- Transcript readability prioritized  
+
+---
+
+13. Cursor Implementation Notes
+Cursor must:
+
+- treat this document as authoritative  
+- generate code consistent with all sections  
+- maintain persona integrity  
+- implement venues as modifiers  
+- implement events as triggers  
+- support escalating absurdity  
+- preserve hybrid tone  
+- never sanitize chaos  
+
+---
+
 END OF MANIFESTO
-Cursor must ingest and apply all rules above.
 
