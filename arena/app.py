@@ -175,13 +175,13 @@ def _spa_index_response() -> FileResponse | HTMLResponse:
     return HTMLResponse(html)
 
 
-@app.get("/legacy")
+@app.get("/legacy", response_model=None)
 def legacy_chair() -> HTMLResponse:
     html = (ROOT / "static" / "chair.html").read_text(encoding="utf-8")
     return HTMLResponse(html)
 
 
-@app.get("/")
+@app.get("/", response_model=None)
 def spa_root() -> FileResponse | HTMLResponse:
     return _spa_index_response()
 
@@ -541,7 +541,7 @@ async def _node_loop(ws: WebSocket, debater_id: str) -> None:
             )
 
 
-@app.get("/{full_path:path}")
+@app.get("/{full_path:path}", response_model=None)
 def spa_fallback(full_path: str) -> FileResponse | HTMLResponse:
     if full_path.startswith("api"):
         raise HTTPException(status_code=404)
