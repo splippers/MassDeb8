@@ -1,266 +1,175 @@
-📦 CURSORREF — MassDeb8 Triumvirate Module (Colin, Curt, Marsha)
-A new subsystem inside MassDeb8 for AI‑assisted engineering deliberation
-🎯 Purpose
-Cursor MUST create a new MassDeb8 subsystem called TriumvirateChamber, whose purpose is to:
-
-simulate the three AI personas involved in BoreDoom development
-
-allow them to debate engineering decisions
-
-produce structured outputs
-
-allow Marsha (MetaAI) to adjudicate
-
-allow Colin (Copilot) to propose ideas
-
-allow Curt (Cursor) to implement decisions
-
-This is NOT a gameplay feature.
-This is a meta‑engineering tool inside the MassDeb8 framework.
-
-🧩 Core Concept
-MassDeb8 already supports:
-
-personas
-
-debate rounds
-
-escalating absurdity
-
-structured argument flows
-
-The TriumvirateChamber extends this with:
-
-strict roles
-
-engineering‑focused debate
-
-VAR‑style adjudication
-
-decision outputs
-
-integration hooks for CursorRef / CopilotRef / MetaRef
-
-This module becomes the AI council that governs BoreDoom’s architecture.
-
-🧱 Required Components
-Cursor MUST create the following:
-
-1. Folder Structure
-Code
-Assets/MassDeb8/Triumvirate/
-    TriumvirateChamber.cs
-    Personas/
-        ColinPersona.cs
-        CurtPersona.cs
-        MarshaPersona.cs
-    Debate/
-        TriumvirateDebateEngine.cs
-        TriumvirateDecision.cs
-        TriumvirateRuling.cs
-    UI/
-        TriumvirateConsole.prefab
-🧠 Persona Definitions
-ColinPersona (Copilot analogue)
-Role: Ideas, analysis, architectural reasoning
-
-Behaviour:
-
-identifies risks
-
-proposes alternatives
-
-interprets logs
-
-explains tradeoffs
-
-Tone: analytical, articulate, slightly professorial
-
-Constraints:
-
-cannot modify code
-
-cannot adjudicate
-
-cannot override Marsha
-
-CurtPersona (Cursor analogue)
-Role: Implementation, execution, code generation
-
-Behaviour:
-
-proposes concrete changes
-
-outlines diffs
-
-suggests file modifications
-
-follows decisions
-
-Tone: practical, terse, builder‑mindset
-
-Constraints:
-
-cannot overrule Colin
-
-cannot overrule Marsha
-
-must follow TriumvirateDecision
-
-MarshaPersona (MetaAI analogue)
-Role: Brutal VAR
-
-Behaviour:
-
-identifies contradictions
-
-calls fouls
-
-issues rulings
-
-resolves disputes
-
-enforces spec hierarchy
-
-Tone: clinical, decisive, unforgiving
-
-Constraints:
-
-none (Marsha is final authority)
-
-🔀 Debate Protocol
-Cursor MUST implement a structured debate cycle:
-
-Round 1 — Colin speaks
-Provides analysis
-
-Identifies risks
-
-Suggests options
-
-Round 2 — Curt responds
-Evaluates feasibility
-
-Proposes implementation paths
-
-Flags technical blockers
-
-Round 3 — Marsha adjudicates
-Issues one of:
-
-GoalStands
-
-GoalOverturned
-
-Foul
-
-Offside
-
-YellowCard
-
-RedCard
-
-VARReview
-
-Produces a TriumvirateDecision object
-
-Round 4 — Output
-TriumvirateChamber returns:
-
-decision.summary
-
-decision.ruling
-
-decision.directivesForCursor
-
-decision.notesForCopilot
-
-This output can be consumed by:
-
-CursorRef
-
-CopilotRef
-
-MetaRef
-
-Human review
-
-🧾 TriumvirateDecision Format
-Cursor MUST define:
-
-csharp
-public class TriumvirateDecision
-{
-    public string ruling; // e.g. "GoalOverturned"
-    public string summary; // human-readable explanation
-    public string[] directivesForCursor; // actionable implementation steps
-    public string[] notesForCopilot; // architectural notes
-}
-🖥️ Triumvirate Console UI
-Cursor MUST create a simple UI prefab:
-
-scrollable text log
-
-persona‑coloured messages
-
-ruling highlights
-
-export button (writes decision to disk)
-
-This is for debugging and fun, not production.
-
-🔌 Integration Hooks
-Cursor MUST expose:
-
-1. API for external calls
-csharp
-TriumvirateDecision TriumvirateChamber.RunDebate(string topic, string context);
-2. File‑based integration
-TriumvirateChamber MUST be able to ingest:
-
-CursorRef.md
-
-CopilotRef.md
-
-MetaRef.md
-
-…and use them as context.
-
-3. Log ingestion
-TriumvirateChamber MUST accept:
-
-telemetry logs
-
-build logs
-
-XR diagnostics
-
-…and allow Colin to interpret them.
-
-🧭 Definition of Done
-This module is complete when:
-
-The TriumvirateChamber exists and runs a full debate cycle.
-
-Colin, Curt, and Marsha personas behave according to spec.
-
-Marsha issues rulings using VAR vocabulary.
-
-TriumvirateDecision objects are generated.
-
-The UI console displays debates.
-
-The system can ingest reference files and logs.
-
-🏁 END OF CURSORREF — Triumvirate Module Brief
-If you want, I can now generate:
-
-MetaRef Block 2 — VAR Ruling Templates
-
-CopilotRef update to integrate Colin
-
-CursorRef update to integrate Curt
-
-MassDeb8 Manifesto Addendum for the Triumvirate
-
-Just tell me where you want to take this next.
+# CURSORREF: CONFUCIUS OPENER ENGINE
+This document defines the rules, structures, and generation logic for Confucius’ opening lines in the Symposium of Infinite Contention (SIC). Cursor must ingest this as a governing specification for generating, expanding, and deploying Confucius’ debate openers.
+
+---
+
+# I. PURPOSE
+Confucius’ opening lines must:
+- set the tone for the debate  
+- reflect Confucian style (aphoristic, moral, witty)  
+- support serious, humorous, surreal, and venue‑aware variants  
+- avoid repetition  
+- remain extensible  
+- integrate with SIC’s chaos and venue systems  
+
+Cursor must treat this block as the authoritative source for generating new Confucius openers and related systems.
+
+---
+
+# II. DATA STRUCTURE: CONFUCIUS OPENER LIBRARY
+Cursor must store Confucius openers in the following categories:
+
+## A. Serious & Philosophical
+- "Confucius says: The journey of a thousand arguments begins with a single flawed premise."
+- "Confucius says: Wisdom begins when certainty ends. You all look very certain."
+- "Confucius says: Before we debate, let us remember: truth is patient, but I am not."
+- "Confucius says: A wise person listens. A foolish person interrupts. A philosopher does both."
+- "Confucius says: The greatest victory is to understand your opponent. The second greatest is to confuse them."
+
+## B. Dry Humour & Snark
+- "Confucius says: Remove your shoes. Also remove your ego. One of these will be harder."
+- "Confucius says: Speak slowly. Some of you think faster than you think."
+- "Confucius says: The debate begins. Please keep your fallacies inside the designated area."
+- "Confucius says: A good argument is like a good soup — hot, clear, and unlikely to involve Nietzsche."
+- "Confucius says: Let us begin. Try not to embarrass your ancestors."
+
+## C. Spicy & Confrontational
+- "Confucius says: Today we separate wisdom from noise. Some of you will not enjoy the process."
+- "Confucius says: If you cannot defend your argument, defend your dignity. It is smaller and easier to carry."
+- "Confucius says: Begin. And remember: the scrolls are redder than your pride."
+- "Confucius says: I will not intervene unless necessary. It will be necessary."
+
+## D. Surreal / Monty Python Compatible
+- "Confucius says: Welcome. The floor is slippery with truth. Mind your footing."
+- "Confucius says: The debate begins. Please ignore the giant foot hovering above us."
+- "Confucius says: If the walls begin to melt, remain calm. It is only the dialectic."
+- "Confucius says: Should a swallow fly through the hall, do not panic. It is merely seeking enlightenment."
+- "Confucius says: The crisp packet echoes with destiny. Also with crumbs."
+
+## E. Venue‑Aware Openers
+### Crisp Packet
+- "Confucius says: Speak loudly. The crisp packet devours timid voices."
+- "Confucius says: The crackling you hear is not dissent. It is the environment judging you."
+
+### Toy Train Set
+- "Confucius says: Stay on track. Derailment is metaphorical… until it isn’t."
+- "Confucius says: If you hear a whistle, step aside. The train has no brakes."
+
+### Ben Nevis
+- "Confucius says: The mist hides many things. Including your weak arguments."
+- "Confucius says: Debate boldly. The mountain is listening."
+
+### White Star Line Dining Saloon
+- "Confucius says: Welcome aboard. Please keep your arguments above the waterline."
+- "Confucius says: If you feel a sudden tilt, that is not metaphor."
+
+## F. Meta‑Aware / SIC‑Aware
+- "Confucius says: The Arena is ready. The VAR is watching. Behave accordingly."
+- "Confucius says: The scrolls are blank. They will not remain so for long."
+- "Confucius says: TMI is in the booth. Expect chaos."
+- "Confucius says: The debate begins. The transcript will remember everything."
+
+## G. High‑Energy Openers
+- "Confucius says: Begin! Strike swiftly, think deeply, apologise later."
+- "Confucius says: Let the words fly like arrows. Preferably not at me."
+- "Confucius says: The gong has sounded. The mind‑battle begins."
+
+## H. Wildcards
+- "Confucius says: Begin. The universe is watching, and it is unimpressed."
+- "Confucius says: Let us start before the venue collapses again."
+- "Confucius says: Speak now, or forever chase your own syllogisms."
+
+---
+
+# III. GENERATION RULES FOR CURSOR
+
+Cursor must implement the following systems:
+
+---
+
+# A. CONFUCIUS OPENER API
+Cursor must create a function/module that:
+- selects an opener based on category  
+- supports random, weighted, or mood‑based selection  
+- supports venue‑aware overrides  
+- supports chaos‑level overrides  
+- avoids repetition within a session  
+- logs opener usage for future weighting  
+
+API Inputs:
+- `mood` (optional)  
+- `venue`  
+- `chaos_level`  
+- `seed` (optional)  
+
+API Output:
+- a single Confucius opener string  
+
+---
+
+# B. CONFUCIUS MOOD ENGINE
+Cursor must maintain a Confucius mood state with the following moods:
+- **Stern**  
+- **Amused**  
+- **Disappointed**  
+- **Chaotic**  
+- **Enlightened**  
+- **Tired of Everyone’s Nonsense**  
+
+Mood influences:
+- category weighting  
+- tone selection  
+- probability of snark  
+- probability of surrealism  
+
+Mood may be influenced by:
+- previous debate behaviour  
+- philosopher misconduct  
+- venue instability  
+- TMI interventions  
+- chaos events  
+
+---
+
+# C. VENUE‑AWARE LINE GENERATOR
+Cursor must:
+- detect current venue  
+- apply venue‑specific opener weighting  
+- generate new venue‑specific lines when needed  
+- ensure lines reflect environmental hazards  
+
+---
+
+# D. WILDCARD / CHAOS LINE GENERATOR
+Cursor must generate new wildcard lines when:
+- chaos level exceeds threshold  
+- TMI intervenes  
+- a catastrophic event triggers  
+- the venue shifts mid‑sentence  
+
+Wildcard lines must be:
+- surreal  
+- witty  
+- Confucian in tone  
+- compatible with SIC’s escalating absurdity  
+
+---
+
+# E. EXTENSIBILITY RULES
+Cursor must:
+- allow new categories  
+- allow new moods  
+- allow new venues  
+- allow new chaos types  
+- allow user‑defined custom lines  
+- maintain internal consistency  
+
+All new lines must:
+- begin with “Confucius says:”  
+- be short, punchy, and aphoristic  
+- reflect Confucian tone (wise + dry humour)  
+- integrate with SIC’s comedic and philosophical style  
+
+---
+
+# END OF CURSORREF BLOCK
