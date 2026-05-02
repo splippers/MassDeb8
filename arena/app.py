@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -48,6 +48,7 @@ app = FastAPI()
 
 ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = ROOT.parent
+UI_DIST = PROJECT_ROOT / "ui" / "dist"
 STORE = Store(PROJECT_ROOT / "data" / "arena.sqlite3")
 STATE = ArenaState()
 
@@ -166,11 +167,28 @@ def api_state() -> JSONResponse:
     )
 
 
-@app.get("/")
-def chair() -> HTMLResponse:
+def _spa_index_response() -> FileResponse | HTMLResponse:
+    index = UI_DIST / "index.html"
+    if index.exists():
+        return FileResponse(index)
     html = (ROOT / "static" / "chair.html").read_text(encoding="utf-8")
     return HTMLResponse(html)
 
+
+@app.get("/legacy")
+def legacy_chair() -> HTMLResponse:
+    html = (ROOT / "static" / "chair.html").read_text(encoding="utf-8")
+    return HTMLResponse(html)
+
+
+@app.get("/")
+def spa_root() -> FileResponse | HTMLResponse:
+    return _spa_index_response()
+
+
+_ui_assets = UI_DIST / "assets"
+if _ui_assets.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(_ui_assets)), name="ui_assets")
 
 app.mount("/static", StaticFiles(directory=str(ROOT / "static")), name="static")
 
@@ -521,4 +539,11 @@ async def _node_loop(ws: WebSocket, debater_id: str) -> None:
                 MsgType.error,
                 ErrorPayload(message="Unknown node message", detail={"type": obj.get("type")}).model_dump(),
             )
+
+
+@app.get("/{full_path:path}")
+def spa_fallback(full_path: str) -> FileResponse | HTMLResponse:
+    if full_path.startswith("api"):
+        raise HTTPException(status_code=404)
+    return _spa_index_response()
 

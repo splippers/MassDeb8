@@ -17,3 +17,7 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+
+# Frontend (Vite)
+ui/node_modules/
+ui/dist/

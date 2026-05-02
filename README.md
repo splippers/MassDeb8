@@ -27,8 +27,41 @@ Run the Arena server:
 .venv/bin/uvicorn arena.app:app --host 0.0.0.0 --port 8787
 ```
 
-Open the Chair UI:
-- `http://<arena-ip>:8787/`
+### Chair UI (React — **Symposium of Infinite Contention**)
+
+Prereq for the frontend: **Node.js 20+** and `npm`.
+
+**Development (two terminals):**
+
+1. Arena (API + WebSocket), port **8787**:
+
+```bash
+.venv/bin/uvicorn arena.app:app --host 0.0.0.0 --port 8787
+```
+
+2. Vite dev server (proxies `/api` and `/ws` to the arena):
+
+```bash
+cd ui
+npm install
+npm run dev
+```
+
+Open **`http://localhost:5173/`** — title screen → lobby → arena. Paste or fetch the **chair key**, then connect.
+
+**Production (single server):** build the SPA, then run uvicorn; the arena serves the React app at `/`.
+
+```bash
+cd ui
+npm install
+npm run build
+cd ..
+.venv/bin/uvicorn arena.app:app --host 0.0.0.0 --port 8787
+```
+
+Open **`http://<arena-ip>:8787/`**. Advanced controls live in **Control Knobs** (drawer).
+
+The old static chair console is still available at **`/legacy`** if needed.
 
 Run a debater node (on the same machine or any LAN machine):
 
@@ -43,6 +76,7 @@ Run a second node:
 ```
 
 ## What’s implemented (MVP)
+- React Chair UI (title / lobby / arena) + **Control Knobs** drawer for advanced settings
 - WebSocket join + roster
 - Chair controls: start, next speaker, interrupt (hard stop), redirect
 - Streaming tokens from nodes into a canonical transcript

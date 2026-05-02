@@ -1,0 +1,470 @@
+:root {
+  --sic-bg: #07090e;
+  --sic-panel: rgba(14, 18, 28, 0.92);
+  --sic-text: #e8eefc;
+  --sic-muted: #95a7c7;
+  --sic-accent: #c9a962;
+  --sic-accent-dim: rgba(201, 169, 98, 0.35);
+  --sic-danger: #ff6b6b;
+  --sic-ok: #2dd4bf;
+  --sic-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --sic-serif: 'Cormorant Garamond', Georgia, serif;
+  --sic-sans: ui-sans-serif, system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--sic-sans);
+  color: var(--sic-text);
+  background: radial-gradient(1200px 700px at 10% -20%, rgba(42, 58, 110, 0.55), transparent 55%),
+    radial-gradient(900px 600px at 95% 0%, rgba(62, 28, 74, 0.45), transparent 50%), var(--sic-bg);
+  min-height: 100vh;
+}
+
+code,
+.sic-code {
+  font-family: var(--sic-mono);
+  font-size: 0.85em;
+  color: var(--sic-accent);
+}
+
+.sic-title,
+.sic-lobby,
+.sic-about,
+.sic-arena {
+  min-height: 100vh;
+}
+
+.sic-title {
+  display: grid;
+  place-items: center;
+  padding: 48px 20px;
+}
+
+.sic-title-inner {
+  max-width: 720px;
+  text-align: center;
+}
+
+.sic-eyebrow {
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--sic-muted);
+  margin: 0 0 16px;
+}
+
+.sic-display {
+  font-family: var(--sic-serif);
+  font-weight: 600;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.1;
+  margin: 0 0 12px;
+}
+
+.sic-tagline {
+  font-family: var(--sic-serif);
+  font-style: italic;
+  font-size: 1.35rem;
+  color: var(--sic-accent);
+  margin: 0 0 20px;
+}
+
+.sic-whisper {
+  color: var(--sic-muted);
+  font-size: 1rem;
+  line-height: 1.55;
+  margin: 0 0 28px;
+}
+
+.sic-title-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sic-lobby,
+.sic-about {
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+}
+
+.sic-panel {
+  width: min(720px, 100%);
+  background: var(--sic-panel);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 22px;
+  backdrop-filter: blur(12px);
+}
+
+.sic-h2 {
+  font-family: var(--sic-serif);
+  font-weight: 600;
+  margin: 0 0 12px;
+  font-size: 1.6rem;
+}
+
+.sic-h3 {
+  font-family: var(--sic-serif);
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  color: var(--sic-muted);
+}
+
+.sic-muted {
+  color: var(--sic-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.sic-body {
+  line-height: 1.55;
+}
+
+.sic-label {
+  display: block;
+  font-size: 12px;
+  color: var(--sic-muted);
+  margin: 12px 0 6px;
+}
+
+.sic-input,
+.sic-textarea {
+  width: 100%;
+  font: inherit;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: var(--sic-text);
+  padding: 10px 12px;
+}
+
+.sic-input-narrow {
+  max-width: 140px;
+}
+
+.sic-textarea {
+  resize: vertical;
+}
+
+.sic-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sic-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sic-lobby-actions {
+  margin-top: 16px;
+}
+
+.sic-hint {
+  font-size: 13px;
+  color: var(--sic-muted);
+  margin-top: 8px;
+}
+
+.sic-instructions {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sic-ol {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  color: var(--sic-muted);
+  line-height: 1.6;
+}
+
+.sic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--sic-accent-dim);
+  background: rgba(201, 169, 98, 0.08);
+  color: var(--sic-text);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+}
+
+.sic-btn:hover {
+  background: rgba(201, 169, 98, 0.15);
+}
+
+.sic-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sic-btn-primary {
+  border-color: rgba(45, 212, 191, 0.45);
+  background: rgba(45, 212, 191, 0.12);
+}
+
+.sic-btn-primary:hover {
+  background: rgba(45, 212, 191, 0.2);
+}
+
+.sic-btn-danger {
+  border-color: rgba(255, 107, 107, 0.45);
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.sic-btn-ghost {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.fade-in {
+  animation: sicFade 1.2s ease-out both;
+}
+
+@keyframes sicFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Arena */
+.sic-arena-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 9, 14, 0.85);
+  backdrop-filter: blur(14px);
+}
+
+.sic-arena-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sic-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sic-link-quiet {
+  color: var(--sic-muted);
+  text-decoration: none;
+  margin-right: 4px;
+}
+
+.sic-pill {
+  font-family: var(--sic-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.sic-pill-on {
+  border-color: rgba(45, 212, 191, 0.45);
+  color: var(--sic-ok);
+}
+
+.sic-pill-off {
+  border-color: rgba(255, 107, 107, 0.35);
+  color: var(--sic-danger);
+}
+
+.sic-floor {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--sic-mono);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.sic-floor-body {
+  margin-left: 8px;
+  color: var(--sic-text);
+}
+
+.sic-arena-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr minmax(240px, 300px);
+  gap: 14px;
+  padding: 14px;
+  align-items: start;
+}
+
+.sic-rail {
+  padding: 14px;
+}
+
+.sic-stage {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 140px);
+}
+
+.sic-activity {
+  font-family: var(--sic-mono);
+  font-size: 11px;
+  color: var(--sic-muted);
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.sic-transcript {
+  flex: 1;
+  overflow: auto;
+  padding: 14px;
+  font-family: var(--sic-mono);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.sic-transcript-line {
+  margin-bottom: 10px;
+}
+
+.sic-live-block {
+  margin: 14px 0;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.sic-live-title {
+  font-size: 11px;
+  color: var(--sic-muted);
+  margin-bottom: 8px;
+}
+
+.sic-live-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--sic-mono);
+  font-size: 12px;
+}
+
+.sic-roster {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sic-roster-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+}
+
+.sic-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+/* Drawer */
+.sic-drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+
+.sic-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 100vw);
+  z-index: 50;
+  background: rgba(10, 12, 18, 0.96);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -18px 0 48px rgba(0, 0, 0, 0.55);
+}
+
+.sic-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sic-drawer-body {
+  padding: 14px 18px 28px;
+  overflow: auto;
+  flex: 1;
+}
+
+.sic-icon-btn {
+  font: inherit;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--sic-muted);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.sic-knob-section {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 1100px) {
+  .sic-arena-grid {
+    grid-template-columns: 1fr;
+  }
+  .sic-stage {
+    min-height: 40vh;
+  }
+}
