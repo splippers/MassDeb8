@@ -27,6 +27,15 @@ Run the Arena server:
 .venv/bin/uvicorn arena.app:app --host 0.0.0.0 --port 8787
 ```
 
+**One-liner on a LAN box (e.g. Eddie):** from the repo root, after `python3 -m venv .venv` + `pip install -r requirements.txt` and Node/npm for the UI build:
+
+```bash
+chmod +x scripts/start_arena.sh
+./scripts/start_arena.sh
+```
+
+Optional: `MASSDEB8_PORT=8787` or `SKIP_UI_BUILD=1` if you already ran `cd ui && npm run build`.
+
 ### Chair UI (React — **Symposium of Infinite Contention**)
 
 Prereq for the frontend: **Node.js 20+** and `npm`.
