@@ -49,6 +49,11 @@ npm run dev
 
 Open **`http://localhost:5173/`** — title screen → lobby → arena. Paste or fetch the **chair key**, then connect.
 
+**Remote machine (e.g. another laptop on the LAN):**
+
+- **Production UI (simplest):** on Eddie, build the UI once, run uvicorn with `--host 0.0.0.0`, then on your laptop open **`http://eddie:8787/`** (or `http://<eddie-ip>:8787/`). The browser will use **`ws://eddie:8787/ws`** automatically (same host/port). Ensure **port 8787** is allowed through Eddie’s firewall.
+- **Dev UI:** with Vite configured to listen on the LAN, run `npm run dev` on Eddie and open **`http://eddie:5173/`** from your laptop. Vite proxies `/api` and `/ws` to the arena on localhost; open **port 5173** on the firewall if needed.
+
 **Production (single server):** build the SPA, then run uvicorn; the arena serves the React app at `/`.
 
 ```bash
