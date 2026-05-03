@@ -140,6 +140,8 @@ async def run_node(
                         f"Debate tendencies: strengths={persona_cfg.debate_behavior.get('strengths', [])}, weaknesses={persona_cfg.debate_behavior.get('weaknesses', [])}\n"
                     )
 
+                    peer_names = [d.name for d in p.debaters if d.debater_id != p.debater_id]
+
                     prompt = build_prompt(
                         name=name,
                         persona=persona,
@@ -153,6 +155,7 @@ async def run_node(
                         topic=p.topic,
                         instruction=p.instruction,
                         transcript_tail=p.transcript_tail,
+                        peer_names=peer_names,
                     )
 
                     print(f"[node] turn_assigned {p.turn_id} round={p.round} (max_tokens={p.max_tokens})")

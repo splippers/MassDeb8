@@ -21,4 +21,6 @@ export type TranscriptLine = {
 export type LiveStream = {
   debaterId: string
   text: string
+  /** Wall-clock ms when the first token of this turn arrived (for display). */
+  startedMs?: number
 }

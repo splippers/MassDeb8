@@ -30,6 +30,12 @@ class MsgType(str, Enum):
     chair_trigger_event = "chair_trigger_event"
     chair_set_spiral = "chair_set_spiral"
     chair_kick = "chair_kick"
+    chair_archive_debate = "chair_archive_debate"
+    chair_set_speaker_mode = "chair_set_speaker_mode"
+    chair_set_auto_advance = "chair_set_auto_advance"
+    chair_summon_tim = "chair_summon_tim"
+    chair_call_debater = "chair_call_debater"
+    chair_confucius_pronounce = "chair_confucius_pronounce"
     # turn flow
     turn_assigned = "turn_assigned"
     turn_stream = "turn_stream"
@@ -39,6 +45,7 @@ class MsgType(str, Enum):
     turn_forced_end = "turn_forced_end"
     # transcript
     transcript_append = "transcript_append"
+    transcript_cleared = "transcript_cleared"
     announce = "announce"
     error = "error"
 
@@ -96,6 +103,7 @@ class TurnAssignedPayload(BaseModel):
     max_tokens: int = 256
     soft_time_ms: int = 120_000
     activity_ping_ms: int = 750
+    debaters: list[DebaterInfo] = Field(default_factory=list)
 
 
 class TurnStreamPayload(BaseModel):
@@ -140,6 +148,11 @@ class ChairRedirectPayload(BaseModel):
     reason: str | None = None
 
 
+class ChairCallDebaterPayload(BaseModel):
+    debater_id: str
+    instruction: str | None = None
+
+
 class ChairKickPayload(BaseModel):
     debater_id: str
 
@@ -169,6 +182,14 @@ class ChairSetSpiralPayload(BaseModel):
 class ChairTriggerEventPayload(BaseModel):
     kind: str
     label: str
+
+
+class ChairSpeakerModePayload(BaseModel):
+    mode: Literal["cycle", "holy_hand_grenade"]
+
+
+class ChairAutoAdvancePayload(BaseModel):
+    enabled: bool
 
 
 class ErrorPayload(BaseModel):

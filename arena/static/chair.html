@@ -235,6 +235,13 @@
             <button id="resumeBtn">Resume</button>
           </div>
 
+          <div class="row" style="margin-bottom: 10px; align-items: center">
+            <button id="archiveDebateBtn" type="button">Archive debate &amp; clear</button>
+            <span class="muted" style="font-size: 12px; line-height: 1.35; flex: 1; min-width: 160px">
+              Saves the live transcript on the server and clears this panel. Lists: <code>GET /api/archives</code>.
+            </span>
+          </div>
+
           <div class="panel" style="margin: 12px 0">
             <h2>Ent Mode</h2>
             <div class="content">
@@ -448,9 +455,19 @@
         wsLabel.textContent = connected ? "connected" : "disconnected";
       }
 
-      function appendLine(line) {
-        transcriptEl.textContent += line + "\n";
-        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+      function debateTs(ms) {
+        try {
+          return new Date(ms).toLocaleString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+        } catch {
+          return String(ms);
+        }
       }
 
       function speakerName(debaterId) {
@@ -471,7 +488,8 @@
         const title = document.createElement("div");
         title.style.fontFamily = "var(--mono)";
         title.style.color = "var(--muted)";
-        title.textContent = `${speakerName(debaterId)} (live)`;
+        const started = Date.now();
+        title.textContent = `[${debateTs(started)}] ${speakerName(debaterId)} (live)`;
 
         const body = document.createElement("div");
         body.style.whiteSpace = "pre-wrap";
@@ -481,8 +499,8 @@
 
         wrap.appendChild(title);
         wrap.appendChild(body);
-        transcriptEl.appendChild(wrap);
-        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+        transcriptEl.insertBefore(wrap, transcriptEl.firstChild);
+        transcriptEl.scrollTop = 0;
 
         liveEls.set(turnId, body);
         return body;
@@ -493,8 +511,8 @@
         line.style.fontFamily = "var(--mono)";
         line.style.whiteSpace = "pre-wrap";
         line.textContent = text;
-        transcriptEl.appendChild(line);
-        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+        transcriptEl.insertBefore(line, transcriptEl.firstChild);
+        transcriptEl.scrollTop = 0;
       }
 
       function renderRoster() {
@@ -605,6 +623,13 @@
           if (m.type === "roster_update") {
             debaters = m.payload.debaters || [];
             renderRoster();
+          } else if (m.type === "transcript_cleared") {
+            transcriptEl.innerHTML = "";
+            liveBuffers.clear();
+            liveEls.clear();
+            floorDebaterId = null;
+            floorTurnId = null;
+            renderPinnedSpeaker();
           } else if (m.type === "debater_activity") {
             const { debater_id, phase, tick, detail } = m.payload || {};
             if (debater_id) {
@@ -619,7 +644,7 @@
             }
           } else if (m.type === "transcript_append") {
             const e = m.payload.event;
-            const ts = new Date(e.ts_ms).toLocaleTimeString();
+            const ts = debateTs(e.ts_ms);
             if (e.kind === "speech") {
               const who = speakerName(e.data.debater_id);
               appendEvent("speech", `[${ts}] ${who}:\\n${e.data.text}\\n`);
@@ -664,14 +689,18 @@
               renderPinnedSpeaker();
             }
           } else if (m.type === "announce") {
-            appendEvent("announce", `[Confucius] ${m.payload.text}`);
+            appendEvent("announce", `[${debateTs(Date.now())}] [Confucius] ${m.payload.text}`);
           } else if (m.type === "error") {
-            appendEvent("error", `[error] ${m.payload.message}`);
+            appendEvent("error", `[${debateTs(Date.now())}] [error] ${m.payload.message}`);
           }
         };
       };
 
       qs("setTopicBtn").onclick = () => send("chair_set_topic", { topic: qs("topic").value });
+      qs("archiveDebateBtn").onclick = () => {
+        if (!confirm("Archive this debate on the server and clear the live transcript here?")) return;
+        send("chair_archive_debate", {});
+      };
       qs("startBtn").onclick = () => send("chair_start");
       qs("nextBtn").onclick = () => send("chair_next");
       qs("pauseBtn").onclick = () => send("chair_pause");

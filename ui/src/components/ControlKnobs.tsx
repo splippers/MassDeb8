@@ -27,11 +27,14 @@ export function ControlKnobs({ open, onClose }: Props) {
   const [spawnOllamaBase, setSpawnOllamaBase] = useState('http://127.0.0.1:11434')
   const [spawnStatus, setSpawnStatus] = useState('')
 
+  const [speakerMode, setSpeakerMode] = useState<'cycle' | 'holy_hand_grenade'>('cycle')
+
   const refresh = useCallback(async () => {
     try {
       const res = await fetch('/api/state')
       const st = await res.json()
       setTopic(st.topic || '')
+      setSpeakerMode(st.speaker_mode === 'holy_hand_grenade' ? 'holy_hand_grenade' : 'cycle')
       setEntEnabled(!!st.ent_mode)
       setEntCadence(st.ent_cadence_ms || 200)
       setToneSeriousness(st.tone_override?.seriousness ?? '')
@@ -53,6 +56,15 @@ export function ControlKnobs({ open, onClose }: Props) {
   useEffect(() => {
     if (open) void refresh()
   }, [open, refresh])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
 
   const spawn = useCallback(async () => {
     if (!spawnPersona) {
@@ -96,7 +108,7 @@ export function ControlKnobs({ open, onClose }: Props) {
   return (
     <>
       <button type="button" className="sic-drawer-scrim" aria-label="Close panel" onClick={onClose} />
-      <aside className="sic-drawer fade-in" role="dialog" aria-label="Control Knobs">
+      <aside id="sic-control-knobs-panel" className="sic-drawer fade-in" role="dialog" aria-label="Control Knobs">
         <div className="sic-drawer-head">
           <h2 className="sic-h2">Control Knobs</h2>
           <button type="button" className="sic-icon-btn" onClick={onClose}>
@@ -116,6 +128,38 @@ export function ControlKnobs({ open, onClose }: Props) {
                 Set
               </button>
             </div>
+          </section>
+
+          <section className="sic-knob-section">
+            <h3 className="sic-h3">Turn order &amp; flow</h3>
+            <p className="sic-muted">
+              <strong>Cycle</strong> rotates speakers in join order. <strong>Holy Hand Grenade</strong> picks the next speaker at random
+              among online debaters.
+            </p>
+            <label className="sic-label">Next speaker</label>
+            <select
+              className="sic-input"
+              value={speakerMode}
+              onChange={(e) => setSpeakerMode(e.target.value as 'cycle' | 'holy_hand_grenade')}
+            >
+              <option value="cycle">Cycle (orderly rotation)</option>
+              <option value="holy_hand_grenade">Holy Hand Grenade (random)</option>
+            </select>
+            <div className="sic-row sic-stack" style={{ marginTop: 10 }}>
+              <button
+                type="button"
+                className="sic-btn"
+                disabled={!connected}
+                onClick={() => send('chair_set_speaker_mode', { mode: speakerMode })}
+              >
+                Apply speaker rule
+              </button>
+            </div>
+            <p className="sic-muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              While debaters are connected, someone usually has the floor automatically (starts when nodes join).{' '}
+              <strong>Interrupt</strong> deliberately clears the floor until you press <strong>Next</strong>,{' '}
+              <strong>Start</strong>, or <strong>Resume</strong>. Use <strong>Pause</strong> for a full halt.
+            </p>
           </section>
 
           <section className="sic-knob-section">

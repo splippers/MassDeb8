@@ -8,13 +8,32 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { formatDebateTimestamp } from '../lib/debateTime'
+import { isDuplicateTranscriptLine } from '../lib/transcriptDedupe'
 import type { ActivityEntry, DebaterInfo, LiveStream, TranscriptLine } from '../types'
 
 const STORAGE_KEY = 'sic_chair_key'
 
+/** `crypto.randomUUID` is not available (or throws) on non-secure HTTP origins; LAN access would blank the UI. */
+function newTranscriptLineId(): string {
+  const c = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined
+  if (c && typeof c.randomUUID === 'function') {
+    try {
+      return c.randomUUID()
+    } catch {
+      /* non-secure context */
+    }
+  }
+  return `tl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`
+}
+
 type ChairContextValue = {
   chairKey: string
   setChairKey: (k: string) => void
+  hallName: string
+  sessionLoading: boolean
+  sessionError: string | null
+  refreshSession: () => Promise<void>
   connected: boolean
   connect: () => void
   disconnect: () => void
@@ -28,12 +47,17 @@ type ChairContextValue = {
   pinnedFloorText: string
   floorDebaterId: string | null
   floorTurnId: string | null
+  debateTopic: string
 }
 
 const ChairContext = createContext<ChairContextValue | null>(null)
 
 export function ChairProvider({ children }: { children: ReactNode }) {
   const [chairKey, setChairKeyState] = useState(() => sessionStorage.getItem(STORAGE_KEY) || '')
+  const [hallName, setHallName] = useState('')
+  const [debateTopic, setDebateTopic] = useState('')
+  const [sessionLoading, setSessionLoading] = useState(true)
+  const [sessionError, setSessionError] = useState<string | null>(null)
   const [connected, setConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -47,7 +71,7 @@ export function ChairProvider({ children }: { children: ReactNode }) {
   const floorTurnIdRef = useRef<string | null>(null)
   const floorDebaterIdRef = useRef<string | null>(null)
 
-  const [uiTick, setUiTick] = useState(0)
+  const [activityNow, setActivityNow] = useState(() => Date.now())
 
   useEffect(() => {
     floorTurnIdRef.current = floorTurnId
@@ -61,13 +85,43 @@ export function ChairProvider({ children }: { children: ReactNode }) {
     sessionStorage.setItem(STORAGE_KEY, k)
   }, [])
 
+  const refreshSession = useCallback(async () => {
+    setSessionLoading(true)
+    setSessionError(null)
+    try {
+      const res = await fetch('/api/state')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const st = (await res.json()) as { chair_key?: string; hall_name?: string; topic?: string }
+      if (typeof st.chair_key === 'string' && st.chair_key.trim()) {
+        setChairKey(st.chair_key.trim())
+      }
+      if (typeof st.hall_name === 'string' && st.hall_name.trim()) {
+        setHallName(st.hall_name.trim())
+      }
+      if (typeof st.topic === 'string') {
+        setDebateTopic(st.topic.trim())
+      }
+    } catch {
+      setSessionError('Could not load session from the arena (is it running?)')
+    } finally {
+      setSessionLoading(false)
+    }
+  }, [setChairKey])
+
+  useEffect(() => {
+    void refreshSession()
+  }, [refreshSession])
+
   const speakerName = useCallback(
     (debaterId: string) => debaters.find((x) => x.debater_id === debaterId)?.name || debaterId,
     [debaters]
   )
 
   const appendTranscript = useCallback((text: string) => {
-    setTranscriptLines((prev) => [...prev, { id: crypto.randomUUID(), text }])
+    setTranscriptLines((prev) => {
+      if (isDuplicateTranscriptLine(text, prev)) return prev
+      return [{ id: newTranscriptLineId(), text }, ...prev]
+    })
   }, [])
 
   const clearTick = useCallback(() => {
@@ -127,83 +181,164 @@ export function ChairProvider({ children }: { children: ReactNode }) {
     }
 
     ws.onmessage = (ev) => {
-      const m = JSON.parse(ev.data)
+      let m: { type?: string; payload?: Record<string, unknown> }
+      try {
+        m = JSON.parse(ev.data as string) as typeof m
+      } catch {
+        appendTranscript(
+          `[${formatDebateTimestamp(Date.now())}] [wire] Invalid JSON from arena (message ignored).\n`
+        )
+        return
+      }
+
       const nameFor = (id: string) =>
         debatersRef.current.find((x) => x.debater_id === id)?.name || id
+      const payload = (m.payload && typeof m.payload === 'object' ? m.payload : {}) as Record<string, unknown>
 
-      if (m.type === 'roster_update') {
-        setDebaters(m.payload.debaters || [])
-      } else if (m.type === 'debater_activity') {
-        const { debater_id, phase, tick: tk, detail } = m.payload || {}
-        if (debater_id) {
-          setActivityByDebater((prev) => {
-            const next = new Map(prev)
-            next.set(debater_id, {
-              phase: phase || '',
-              tick: tk || 0,
-              detail: detail || {},
-              at: Date.now(),
+      try {
+        if (m.type === 'welcome') {
+          const top = payload.topic
+          if (typeof top === 'string') setDebateTopic(top)
+        } else if (m.type === 'roster_update') {
+          const list = payload.debaters
+          setDebaters(Array.isArray(list) ? (list as DebaterInfo[]) : [])
+        } else if (m.type === 'transcript_cleared') {
+          setTranscriptLines([])
+          setLiveStreams({})
+          setFloorDebaterId(null)
+          setFloorTurnId(null)
+          floorTurnIdRef.current = null
+          floorDebaterIdRef.current = null
+        } else if (m.type === 'debater_activity') {
+          const debater_id = payload.debater_id as string | undefined
+          const phase = payload.phase as string | undefined
+          const tk = payload.tick as number | undefined
+          const detail = payload.detail as Record<string, unknown> | undefined
+          if (debater_id) {
+            setActivityByDebater((prev) => {
+              const next = new Map(prev)
+              next.set(debater_id, {
+                phase: phase || '',
+                tick: typeof tk === 'number' ? tk : 0,
+                detail: detail && typeof detail === 'object' ? detail : {},
+                at: Date.now(),
+              })
+              return next
             })
-            return next
+          }
+        } else if (m.type === 'transcript_append') {
+          const e = payload.event as Record<string, unknown> | undefined
+          if (!e || typeof e !== 'object') return
+          const tsMs = typeof e.ts_ms === 'number' ? e.ts_ms : Date.now()
+          const ts = formatDebateTimestamp(tsMs)
+          const kind = typeof e.kind === 'string' ? e.kind : ''
+          const rawData = e.data
+          const d =
+            rawData && typeof rawData === 'object' && !Array.isArray(rawData)
+              ? (rawData as Record<string, unknown>)
+              : {}
+
+          if (kind === 'topic') {
+            const topicStr = String(d.topic ?? '')
+            setDebateTopic(topicStr)
+            appendTranscript(`[${ts}] Topic: ${topicStr}\n`)
+          } else if (kind === 'speech') {
+            const who = nameFor(String(d.debater_id ?? ''))
+            appendTranscript(`[${ts}] ${who}:\n${String(d.text ?? '')}\n`)
+            const tid = String(d.turn_id ?? '')
+            if (tid) {
+              setLiveStreams((prev) => {
+                if (!(tid in prev)) return prev
+                const next = { ...prev }
+                delete next[tid]
+                return next
+              })
+            }
+            if (d.turn_id && d.turn_id === floorTurnIdRef.current) {
+              setFloorDebaterId(null)
+              setFloorTurnId(null)
+              floorTurnIdRef.current = null
+              floorDebaterIdRef.current = null
+            }
+          } else if (kind === 'turn_start') {
+            const who = nameFor(String(d.debater_id ?? ''))
+            appendTranscript(`[${ts}] ▶ ${who} begins (${String(d.round ?? '')})`)
+            const tid = String(d.turn_id ?? '')
+            const bid = String(d.debater_id ?? '')
+            setFloorTurnId(tid || null)
+            setFloorDebaterId(bid || null)
+            floorTurnIdRef.current = tid || null
+            floorDebaterIdRef.current = bid || null
+          } else if (kind === 'turn_forced_end') {
+            const who = nameFor(String(d.debater_id ?? ''))
+            appendTranscript(`[${ts}] ■ ${who} stopped (${String(d.reason ?? '')})`)
+            const tid = String(d.turn_id ?? '')
+            if (tid) {
+              setLiveStreams((prev) => {
+                if (!(tid in prev)) return prev
+                const next = { ...prev }
+                delete next[tid]
+                return next
+              })
+            }
+            if (d.turn_id === floorTurnIdRef.current || d.debater_id === floorDebaterIdRef.current) {
+              setFloorDebaterId(null)
+              setFloorTurnId(null)
+              floorTurnIdRef.current = null
+              floorDebaterIdRef.current = null
+            }
+          } else if (kind === 'participant_removed') {
+            const id = String(d.debater_id ?? '')
+            if (id === floorDebaterIdRef.current) {
+              setFloorDebaterId(null)
+              setFloorTurnId(null)
+              floorTurnIdRef.current = null
+              floorDebaterIdRef.current = null
+            }
+            appendTranscript(`[${ts}] Removed debater ${id}`)
+          } else {
+            const fallback =
+              rawData === undefined || rawData === null
+                ? e
+                : Array.isArray(rawData)
+                  ? rawData
+                  : typeof rawData === 'object'
+                    ? rawData
+                    : d
+            appendTranscript(`[${ts}] ${kind || '?'}: ${JSON.stringify(fallback)}\n`)
+          }
+        } else if (m.type === 'turn_stream') {
+          const turn_id = typeof payload.turn_id === 'string' ? payload.turn_id : ''
+          const debater_id = typeof payload.debater_id === 'string' ? payload.debater_id : ''
+          const delta = typeof payload.delta === 'string' ? payload.delta : String(payload.delta ?? '')
+          if (!turn_id) return
+          setLiveStreams((prev) => {
+            const cur = prev[turn_id]?.text || ''
+            const nextText = cur + delta
+            const startedMs = prev[turn_id]?.startedMs ?? Date.now()
+            return {
+              ...prev,
+              [turn_id]: { debaterId: debater_id, text: nextText, startedMs },
+            }
           })
+        } else if (m.type === 'announce') {
+          const stamp = formatDebateTimestamp(Date.now())
+          appendTranscript(`[${stamp}] [Confucius] ${String(payload.text ?? '')}\n`)
+        } else if (m.type === 'error') {
+          const stamp = formatDebateTimestamp(Date.now())
+          appendTranscript(`[${stamp}] [error] ${String(payload.message ?? 'unknown error')}\n`)
         }
-      } else if (m.type === 'transcript_append') {
-        const e = m.payload.event
-        const ts = new Date(e.ts_ms).toLocaleTimeString()
-        if (e.kind === 'speech') {
-          const who = nameFor(e.data.debater_id)
-          appendTranscript(`[${ts}] ${who}:\n${e.data.text}\n`)
-          if (e.data.turn_id && e.data.turn_id === floorTurnIdRef.current) {
-            setFloorDebaterId(null)
-            setFloorTurnId(null)
-            floorTurnIdRef.current = null
-            floorDebaterIdRef.current = null
-          }
-        } else if (e.kind === 'turn_start') {
-          const who = nameFor(e.data.debater_id)
-          appendTranscript(`[${ts}] ▶ ${who} begins (${e.data.round})`)
-          setFloorTurnId(e.data.turn_id)
-          setFloorDebaterId(e.data.debater_id)
-          floorTurnIdRef.current = e.data.turn_id
-          floorDebaterIdRef.current = e.data.debater_id
-        } else if (e.kind === 'turn_forced_end') {
-          const who = nameFor(e.data.debater_id)
-          appendTranscript(`[${ts}] ■ ${who} stopped (${e.data.reason})`)
-          if (e.data.turn_id === floorTurnIdRef.current || e.data.debater_id === floorDebaterIdRef.current) {
-            setFloorDebaterId(null)
-            setFloorTurnId(null)
-            floorTurnIdRef.current = null
-            floorDebaterIdRef.current = null
-          }
-        } else if (e.kind === 'participant_removed') {
-          const id = e.data.debater_id as string
-          if (id === floorDebaterIdRef.current) {
-            setFloorDebaterId(null)
-            setFloorTurnId(null)
-            floorTurnIdRef.current = null
-            floorDebaterIdRef.current = null
-          }
-          appendTranscript(`[${ts}] Removed debater ${id}`)
-        } else {
-          appendTranscript(`[${ts}] ${e.kind}: ${JSON.stringify(e.data)}`)
-        }
-      } else if (m.type === 'turn_stream') {
-        const { turn_id, debater_id, delta } = m.payload
-        setLiveStreams((prev) => {
-          const cur = prev[turn_id]?.text || ''
-          return { ...prev, [turn_id]: { debaterId: debater_id, text: cur + delta } }
-        })
-      } else if (m.type === 'announce') {
-        appendTranscript(`[Confucius] ${m.payload.text}`)
-      } else if (m.type === 'error') {
-        appendTranscript(`[error] ${m.payload.message}`)
+      } catch (err) {
+        appendTranscript(
+          `[${formatDebateTimestamp(Date.now())}] [wire] Error handling message (${m.type}): ${String(err)}\n`
+        )
       }
     }
   }, [appendTranscript, chairKey, clearTick, disconnect])
 
   useEffect(() => {
     if (!connected) return
-    tickRef.current = setInterval(() => setUiTick((t) => t + 1), 1000)
+    tickRef.current = setInterval(() => setActivityNow(Date.now()), 1000)
     return () => clearTick()
   }, [connected, clearTick])
 
@@ -224,11 +359,11 @@ export function ChairProvider({ children }: { children: ReactNode }) {
               .filter(Boolean)
               .join(' · ')
           : ''
-      const ago = Math.max(0, Math.round((Date.now() - a.at) / 100) / 10)
+      const ago = Math.max(0, Math.round((activityNow - a.at) / 100) / 10)
       lines.push(`${who}: ${phase} #${tickN}${extra ? ` · ${extra}` : ''} · ${ago}s ago`)
     }
     return lines.join('   |   ')
-  }, [activityByDebater, speakerName, uiTick])
+  }, [activityByDebater, activityNow, speakerName])
 
   const pinnedFloorText = useMemo(() => {
     if (!floorDebaterId) return 'Nobody speaking.'
@@ -244,11 +379,15 @@ export function ChairProvider({ children }: { children: ReactNode }) {
       if (d.ollama_model) parts.push(String(d.ollama_model))
     }
     return parts.join(' · ')
-  }, [activityByDebater, floorDebaterId, floorTurnId, liveStreams, speakerName, uiTick])
+  }, [activityByDebater, floorDebaterId, floorTurnId, liveStreams, speakerName])
 
   const value: ChairContextValue = {
     chairKey,
     setChairKey,
+    hallName,
+    sessionLoading,
+    sessionError,
+    refreshSession,
     connected,
     connect,
     disconnect,
@@ -262,11 +401,13 @@ export function ChairProvider({ children }: { children: ReactNode }) {
     pinnedFloorText,
     floorDebaterId,
     floorTurnId,
+    debateTopic,
   }
 
   return <ChairContext.Provider value={value}>{children}</ChairContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useChair(): ChairContextValue {
   const ctx = useContext(ChairContext)
   if (!ctx) throw new Error('useChair must be used within ChairProvider')

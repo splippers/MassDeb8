@@ -36,9 +36,13 @@ class Turn:
     forced_end: asyncio.Event = field(default_factory=asyncio.Event)
 
 
+DEFAULT_HALL_NAME = "The Great Hall"
+DEFAULT_TOPIC = "The hall is open. What may be said, before the spiral turns?"
+
+
 @dataclass
 class ArenaState:
-    topic: str = "Is free will compatible with determinism?"
+    topic: str = DEFAULT_TOPIC
     paused: bool = False
     ent_mode: bool = True
     ent_cadence_ms: int = 200
@@ -46,7 +50,13 @@ class ArenaState:
     tone_monty_factor: float | None = None
     venue: str = "Inside a Crisp Packet"
     spiral: float = 0.15
+    hall_name: str = DEFAULT_HALL_NAME
     chair_key: str = field(default_factory=lambda: secrets.token_hex(8))
+    # "cycle" = rotate roster order; "holy_hand_grenade" = random connected debater each turn
+    speaker_mode: str = "cycle"
+    auto_advance: bool = True
+    # After a chair interrupt ("throw"), hold the floor empty until Next/Start/Resume (see arena watchdog).
+    awaiting_chair_floor: bool = False
 
     last_event: dict[str, Any] | None = None
 
@@ -94,14 +104,23 @@ class ArenaState:
         self.speaking_order = [x for x in self.speaking_order if x != debater_id]
         return True
 
-    def next_speaker(self) -> str | None:
+    def pick_next_speaker(self) -> str | None:
+        """Choose who speaks next: orderly cycle or Holy Hand Grenade (random among online)."""
+        connected = [
+            bid
+            for bid in self.speaking_order
+            if bid in self.debaters and self.debaters[bid].connected
+        ]
+        if not connected:
+            return None
+        if self.speaker_mode == "holy_hand_grenade":
+            return secrets.choice(connected)
         if not self.speaking_order:
             return None
-        # find next connected
         for _ in range(len(self.speaking_order)):
             debater_id = self.speaking_order[self._order_idx % len(self.speaking_order)]
             self._order_idx = (self._order_idx + 1) % len(self.speaking_order)
-            if self.debaters.get(debater_id) and self.debaters[debater_id].connected:
+            if debater_id in connected:
                 return debater_id
         return None
 

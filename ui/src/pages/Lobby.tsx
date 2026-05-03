@@ -3,20 +3,19 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useChair } from '../context/ChairContext'
 
 export function Lobby() {
-  const { chairKey, setChairKey } = useChair()
+  const { chairKey, setChairKey, hallName, sessionLoading, sessionError, refreshSession } = useChair()
   const navigate = useNavigate()
   const [hint, setHint] = useState<string | null>(null)
 
-  const fetchKey = useCallback(async () => {
+  const copyKey = useCallback(async () => {
+    if (!chairKey.trim()) return
     try {
-      const res = await fetch('/api/state')
-      const st = await res.json()
-      if (st.chair_key) setChairKey(st.chair_key)
-      setHint('Loaded chair key from the arena.')
+      await navigator.clipboard.writeText(chairKey)
+      setHint('Chair key copied.')
     } catch {
-      setHint('Could not reach /api/state (is the arena running?)')
+      setHint('Could not copy to clipboard.')
     }
-  }, [setChairKey])
+  }, [chairKey])
 
   const enterArena = useCallback(() => {
     if (!chairKey.trim()) {
@@ -29,22 +28,27 @@ export function Lobby() {
   return (
     <div className="sic-lobby">
       <div className="sic-panel fade-in">
-        <h2 className="sic-h2">Lobby</h2>
+        <h2 className="sic-h2">{hallName ? hallName : 'Lobby'}</h2>
         <p className="sic-muted">
           You are the Chair. Take a breath. When you enter the arena, the transcript becomes the stage.
         </p>
-        <label className="sic-label">Chair key</label>
+        {sessionLoading ? <p className="sic-hint">Loading session from the arena…</p> : null}
+        {sessionError ? <p className="sic-hint">{sessionError}</p> : null}
+        <label className="sic-label">Chair key (auto-loaded when the arena is reachable)</label>
         <div className="sic-row">
           <input
             className="sic-input"
             value={chairKey}
             onChange={(e) => setChairKey(e.target.value)}
-            placeholder="from GET /api/state"
+            placeholder="loaded from GET /api/state"
             autoComplete="off"
             spellCheck={false}
           />
-          <button type="button" className="sic-btn" onClick={fetchKey}>
-            Fetch
+          <button type="button" className="sic-btn" onClick={() => void refreshSession()}>
+            Refresh
+          </button>
+          <button type="button" className="sic-btn" disabled={!chairKey.trim()} onClick={copyKey}>
+            Copy key
           </button>
         </div>
         {hint ? <p className="sic-hint">{hint}</p> : null}

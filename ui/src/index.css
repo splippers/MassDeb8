@@ -58,6 +58,50 @@ code,
   text-align: center;
 }
 
+.sic-handle-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.sic-handle-lead {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.sic-handle-label {
+  align-self: stretch;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.sic-handle-input {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 16px;
+}
+
+.sic-handle-submit {
+  min-width: 160px;
+}
+
+.sic-welcome-greeting {
+  font-family: var(--sic-serif);
+  font-size: clamp(1.35rem, 3.6vw, 1.85rem);
+  font-weight: 600;
+  color: var(--sic-accent);
+  margin: 0 0 20px;
+  line-height: 1.25;
+}
+
+.sic-handle-foot {
+  margin: 0 0 20px;
+  font-size: 14px;
+}
+
 .sic-eyebrow {
   letter-spacing: 0.35em;
   text-transform: uppercase;
@@ -260,10 +304,118 @@ code,
   position: sticky;
   top: 0;
   z-index: 5;
-  padding: 14px 18px;
+  padding: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(7, 9, 14, 0.85);
   backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sic-arena-header-inner {
+  padding: 14px 18px;
+}
+
+.sic-var-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px 20px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 90, 90, 0.22);
+  background: linear-gradient(95deg, rgba(52, 18, 22, 0.42), rgba(10, 12, 20, 0.72));
+}
+
+.sic-var-btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 13px 26px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 107, 107, 0.55);
+  background: linear-gradient(175deg, rgba(110, 35, 40, 0.55), rgba(28, 10, 14, 0.75));
+  color: #ffdfe0;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(120, 30, 40, 0.35);
+}
+
+.sic-var-btn:hover:not(:disabled) {
+  border-color: rgba(255, 160, 160, 0.85);
+  color: #fff;
+}
+
+.sic-var-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.sic-var-strip-hint {
+  font-size: 13px;
+  color: var(--sic-muted);
+  max-width: 440px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.sic-topic-ticker {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(201, 169, 98, 0.28);
+  background: linear-gradient(90deg, rgba(28, 22, 14, 0.95), rgba(12, 14, 22, 0.98));
+}
+
+.sic-topic-ticker-label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 14px;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--sic-muted);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sic-topic-ticker-mask {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.sic-topic-ticker-track {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  animation: sic-topic-marquee 52s linear infinite;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.sic-topic-ticker:hover .sic-topic-ticker-track {
+  animation-play-state: paused;
+}
+
+.sic-topic-ticker-item {
+  font-family: var(--sic-serif);
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--sic-accent);
+  line-height: 1.35;
+}
+
+@keyframes sic-topic-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .sic-arena-header-row {
@@ -318,12 +470,156 @@ code,
   color: var(--sic-text);
 }
 
+/* Debater portraits — centered row directly under the Floor strip */
+.sic-portrait-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(10px, 2vw, 22px);
+  padding: 14px 12px 16px;
+  margin-top: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent);
+}
+
+.sic-portrait-strip-empty {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+  width: 100%;
+}
+
 .sic-arena-grid {
   display: grid;
   grid-template-columns: minmax(220px, 280px) 1fr minmax(240px, 300px);
   gap: 14px;
   padding: 14px;
   align-items: start;
+}
+
+.sic-debate-portrait {
+  margin: 0;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 88px;
+  text-align: center;
+}
+
+.sic-debate-portrait-btn {
+  margin: 0;
+  flex: 0 0 auto;
+  max-width: 88px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.sic-debate-portrait-btn:focus-visible {
+  outline: 2px solid rgba(201, 169, 98, 0.55);
+  outline-offset: 4px;
+}
+
+.sic-debate-portrait-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sic-debate-portrait--clickable:not(:disabled):hover .sic-debate-portrait-frame {
+  border-color: rgba(201, 169, 98, 0.45);
+}
+
+.sic-debate-portrait--referee .sic-debate-portrait-frame {
+  border-color: rgba(201, 169, 98, 0.35);
+  box-shadow: inset 0 0 20px rgba(201, 169, 98, 0.08);
+}
+
+.sic-debate-portrait--referee.sic-debate-portrait--clickable:not(:disabled):hover .sic-debate-portrait-frame {
+  border-color: rgba(201, 169, 98, 0.55);
+}
+
+.sic-debate-portrait-frame {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sic-debate-portrait-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(56, 72, 104, 0.85), rgba(28, 22, 48, 0.92));
+  border-radius: 50%;
+}
+
+.sic-debate-portrait-initials {
+  font-family: var(--sic-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: rgba(232, 238, 252, 0.92);
+  letter-spacing: 0.04em;
+  user-select: none;
+}
+
+.sic-debate-portrait-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sic-debate-portrait-img--loaded {
+  opacity: 1;
+}
+
+.sic-debate-portrait-caption {
+  margin: 6px 0 0;
+  font-size: 10px;
+  line-height: 1.25;
+  color: var(--sic-muted);
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sic-debate-portrait--speaking .sic-debate-portrait-frame {
+  border-color: rgba(45, 212, 191, 0.65);
+  box-shadow:
+    0 0 0 2px rgba(45, 212, 191, 0.35),
+    0 0 28px rgba(45, 212, 191, 0.35);
+  transform: scale(1.06);
+}
+
+.sic-debate-portrait--offline .sic-debate-portrait-frame {
+  opacity: 0.55;
+  filter: grayscale(0.85);
+}
+
+.sic-debate-portrait--offline .sic-debate-portrait-caption {
+  opacity: 0.75;
 }
 
 .sic-rail {
@@ -344,6 +640,139 @@ code,
   padding: 10px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(0, 0, 0, 0.25);
+}
+
+/* Floating live generation (collapsed trigger; panel on demand) */
+.sic-live-popout {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.sic-live-popout-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font: inherit;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  background: rgba(10, 14, 22, 0.94);
+  color: var(--sic-text);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.sic-live-popout-trigger:hover {
+  border-color: rgba(45, 212, 191, 0.55);
+}
+
+.sic-live-popout-trigger-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sic-ok);
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.55);
+  animation: sic-live-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes sic-live-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.sic-live-popout-trigger-meta {
+  font-family: var(--sic-mono);
+  font-size: 11px;
+  color: var(--sic-muted);
+}
+
+.sic-live-popout-trigger-hint {
+  font-size: 12px;
+  color: var(--sic-accent);
+}
+
+.sic-live-popout-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 54;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.42);
+  cursor: pointer;
+}
+
+.sic-live-popout-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 56;
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(46vh, 520px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 14, 20, 0.97);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+}
+
+.sic-live-popout-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sic-live-popout-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sic-live-popout-close {
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--sic-muted);
+}
+
+.sic-live-popout-close:hover {
+  color: var(--sic-text);
+}
+
+.sic-live-popout-body {
+  overflow: auto;
+  padding: 12px 14px 16px;
+  flex: 1;
+}
+
+.sic-live-popout-body .sic-live-block {
+  margin: 0 0 12px;
+}
+
+.sic-live-popout-body .sic-live-block:last-child {
+  margin-bottom: 0;
+}
+
+.sic-live-ts {
+  color: var(--sic-muted);
+  font-weight: 500;
 }
 
 .sic-transcript {
@@ -404,6 +833,39 @@ code,
   cursor: pointer;
 }
 
+/* Fixed edge control — opens same drawer as header “Control Knobs” */
+.sic-knobs-tab {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 35;
+  margin: 0;
+  padding: 16px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  cursor: pointer;
+  color: var(--sic-fg, #e8eaef);
+  background: linear-gradient(180deg, rgba(28, 32, 44, 0.96), rgba(14, 16, 22, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.35);
+}
+.sic-knobs-tab:hover {
+  background: linear-gradient(180deg, rgba(36, 40, 54, 0.98), rgba(18, 20, 28, 0.98));
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.sic-knobs-tab-open {
+  z-index: 55;
+  background: linear-gradient(180deg, rgba(44, 52, 72, 0.98), rgba(24, 28, 38, 0.98));
+  border-color: rgba(120, 160, 220, 0.35);
+}
+
 /* Drawer */
 .sic-drawer-scrim {
   position: fixed;
@@ -460,11 +922,67 @@ code,
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.sic-banner {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.sic-banner-muted {
+  color: var(--sic-muted);
+}
+.sic-banner-warn {
+  color: #e8b86a;
+}
+
+.sic-empty-chamber {
+  margin: 12px 0 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(200, 180, 120, 0.25);
+  background: linear-gradient(135deg, rgba(40, 32, 24, 0.5), rgba(12, 14, 20, 0.6));
+}
+.sic-empty-chamber .sic-h3 {
+  margin-top: 0;
+}
+.sic-empty-chamber-cmd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0;
+}
+.sic-empty-chamber-pre {
+  flex: 1 1 240px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--sic-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.sic-link-btn {
+  font: inherit;
+  color: #c4b5a0;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.sic-link-btn:hover {
+  color: #e8dcc8;
+}
+
 @media (max-width: 1100px) {
   .sic-arena-grid {
     grid-template-columns: 1fr;
   }
   .sic-stage {
     min-height: 40vh;
+    order: -1;
   }
 }

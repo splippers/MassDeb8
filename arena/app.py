@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import random
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from arena import confucius
+from arena.chair_key import load_or_create_chair_key
 from arena.spawn import (
     list_persona_keys,
     node_arena_ws,
@@ -18,13 +20,16 @@ from arena.spawn import (
     spawn_enabled,
     validate_persona_key,
 )
-from arena.state import ArenaState, Turn, new_id
+from arena.state import ArenaState, DEFAULT_HALL_NAME, DEFAULT_TOPIC, Turn, new_id
 from arena.store import Store
 from arena.world import APPROVED_VENUES, venue_by_name
 from shared.protocol import (
+    ChairAutoAdvancePayload,
+    ChairCallDebaterPayload,
     ChairInterruptPayload,
     ChairKickPayload,
     ChairRedirectPayload,
+    ChairSpeakerModePayload,
     ChairSetEntPayload,
     ChairSetSpiralPayload,
     ChairSetTonePayload,
@@ -32,6 +37,7 @@ from shared.protocol import (
     ChairTriggerEventPayload,
     ClientKind,
     DebaterActivityPayload,
+    DebaterInfo,
     ErrorPayload,
     HelloPayload,
     MsgType,
@@ -50,7 +56,11 @@ ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = ROOT.parent
 UI_DIST = PROJECT_ROOT / "ui" / "dist"
 STORE = Store(PROJECT_ROOT / "data" / "arena.sqlite3")
-STATE = ArenaState()
+STATE = ArenaState(
+    chair_key=load_or_create_chair_key(PROJECT_ROOT),
+    hall_name=DEFAULT_HALL_NAME,
+    topic=DEFAULT_TOPIC,
+)
 
 # Connections
 CHAIRS: set[WebSocket] = set()
@@ -95,8 +105,30 @@ async def broadcast_roster() -> None:
     await broadcast_to_chairs(MsgType.roster_update, {"debaters": STATE.roster()})
 
 
+async def archive_debate_and_notify() -> dict[str, Any]:
+    """Snapshot live transcript into transcript_archive, clear live table, notify chairs."""
+    result = STORE.archive_and_clear()
+    await broadcast_to_chairs(
+        MsgType.transcript_cleared,
+        {
+            "archive_id": result.get("archive_id"),
+            "rows_archived": int(result.get("rows_archived") or 0),
+            "archived_at_ms": result.get("archived_at_ms"),
+        },
+    )
+    await broadcast_to_chairs(
+        MsgType.announce,
+        {"text": confucius.on_archive(int(result.get("rows_archived") or 0))},
+    )
+    return result
+
+
 def chair_authed(hello: HelloPayload) -> bool:
     return bool(hello.chair_key) and hello.chair_key == STATE.chair_key
+
+
+class ArchiveDebateIn(BaseModel):
+    chair_key: str
 
 
 class SpawnDebaterIn(BaseModel):
@@ -149,6 +181,27 @@ def api_spawn_debater(request: Request, body: SpawnDebaterIn) -> JSONResponse:
     )
 
 
+@app.post("/api/archive_debate")
+async def api_archive_debate(body: ArchiveDebateIn) -> JSONResponse:
+    if body.chair_key != STATE.chair_key:
+        return JSONResponse({"ok": False, "error": "bad chair_key"}, status_code=401)
+    result = await archive_debate_and_notify()
+    return JSONResponse(result)
+
+
+@app.get("/api/archives")
+def api_archives_list() -> JSONResponse:
+    return JSONResponse({"archives": STORE.list_archives()})
+
+
+@app.get("/api/archive/{archive_id}")
+def api_archive_get(archive_id: int) -> JSONResponse:
+    data = STORE.get_archive_events(archive_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="unknown archive_id")
+    return JSONResponse(data)
+
+
 @app.get("/api/state")
 def api_state() -> JSONResponse:
     return JSONResponse(
@@ -161,6 +214,10 @@ def api_state() -> JSONResponse:
             "venue": STATE.venue,
             "spiral": STATE.spiral,
             "chair_key": STATE.chair_key,
+            "hall_name": STATE.hall_name,
+            "speaker_mode": STATE.speaker_mode,
+            "auto_advance": STATE.auto_advance,
+            "awaiting_chair_floor": STATE.awaiting_chair_floor,
             "debaters": STATE.roster(),
             "tail": STORE.tail(60),
         }
@@ -193,26 +250,30 @@ if _ui_assets.is_dir():
 app.mount("/static", StaticFiles(directory=str(ROOT / "static")), name="static")
 
 
-async def start_next_turn() -> None:
-    if STATE.paused:
-        await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: We are paused. Nobody is wise."})
-        return
-    if STATE.active_turn is not None:
-        await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: One at a time! Even Ents queue."})
-        return
+_OPEN_INSTRUCTION_DEFAULT = (
+    "One paragraph: engage prior speakers; do not repeat your earlier points; "
+    "you may ask another debater one question by name."
+)
 
-    debater_id = STATE.next_speaker()
-    if not debater_id:
-        await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: No speakers available. A silent debate is just meditation."})
-        return
+
+async def assign_turn_to_debater(debater_id: str, *, round_name: str = "open", instruction: str | None = None) -> None:
     ws = NODES.get(debater_id)
     if not ws:
         return
+    instr = _OPEN_INSTRUCTION_DEFAULT
+    if instruction is not None and str(instruction).strip():
+        instr = str(instruction).strip()
 
-    turn = Turn(turn_id=new_id("turn"), debater_id=debater_id, round="open", instruction="Give your argument, but be witty and stay in character.")
+    turn = Turn(
+        turn_id=new_id("turn"),
+        debater_id=debater_id,
+        round=round_name,
+        instruction=instr,
+    )
     STATE.active_turn = turn
 
     tail = STORE.tail(18)
+    roster = [DebaterInfo(**x) for x in STATE.roster()]
     payload = TurnAssignedPayload(
         turn_id=turn.turn_id,
         debater_id=turn.debater_id,
@@ -224,6 +285,7 @@ async def start_next_turn() -> None:
         venue=STATE.venue,
         spiral=STATE.spiral,
         event=STATE.last_event,
+        debaters=roster,
         max_tokens=256,
         soft_time_ms=180_000,
         activity_ping_ms=750,
@@ -237,6 +299,76 @@ async def start_next_turn() -> None:
     await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
 
     asyncio.create_task(_turn_timeout_watch(turn.turn_id, turn.debater_id, payload["soft_time_ms"]))
+
+
+async def _debate_auto_continue() -> None:
+    """After a clean speech ends: optional Confucius aside, then assign the next turn."""
+    await asyncio.sleep(0.55)
+    if STATE.paused:
+        return
+    if random.random() < 0.20:
+        await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_interjection()})
+        await asyncio.sleep(0.35)
+    await start_next_turn()
+
+
+async def start_next_turn() -> None:
+    if STATE.paused:
+        await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: We are paused. Nobody is wise."})
+        return
+    if STATE.active_turn is not None:
+        await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: One at a time! Even Ents queue."})
+        return
+
+    # Keep calling pick_next_speaker until we find someone with a live node socket (skip stale picks).
+    debater_id: str | None = None
+    ws = None
+    slots = max(len(STATE.speaking_order), 1)
+    for _ in range(slots):
+        cand = STATE.pick_next_speaker()
+        if not cand:
+            break
+        w = NODES.get(cand)
+        if w:
+            debater_id = cand
+            ws = w
+            break
+    if not debater_id or not ws:
+        await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: No speakers available. A silent debate is just meditation."})
+        return
+
+    await assign_turn_to_debater(debater_id, round_name="open", instruction=None)
+
+
+async def chair_call_debater(ws: WebSocket, payload: dict[str, Any]) -> None:
+    """Portrait click (etc.): give the floor to a specific connected debater; hand off from current speaker if needed."""
+    try:
+        p = ChairCallDebaterPayload(**payload)
+    except Exception as e:
+        await ws_send(ws, MsgType.error, ErrorPayload(message=f"chair_call_debater: {e}").model_dump())
+        return
+
+    STATE.awaiting_chair_floor = False
+    if STATE.paused:
+        await broadcast_to_chairs(
+            MsgType.announce,
+            {"text": "Confucius says: We are paused. Resume before calling a speaker from the bench."},
+        )
+        return
+    if p.debater_id not in STATE.debaters:
+        await ws_send(ws, MsgType.error, ErrorPayload(message="Unknown debater_id").model_dump())
+        return
+    if not STATE.debaters[p.debater_id].connected or p.debater_id not in NODES:
+        await ws_send(ws, MsgType.error, ErrorPayload(message="That debater is not connected.").model_dump())
+        return
+    if STATE.active_turn and STATE.active_turn.debater_id == p.debater_id:
+        await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: They already hold the floor."})
+        return
+
+    if STATE.active_turn:
+        await force_end_turn(reason="handoff")
+
+    await assign_turn_to_debater(p.debater_id, round_name="open", instruction=p.instruction)
 
 
 async def _turn_timeout_watch(turn_id: str, debater_id: str, soft_time_ms: int) -> None:
@@ -264,6 +396,48 @@ async def force_end_turn(reason: str) -> None:
     )
     await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
     STATE.active_turn = None
+
+    r = (reason or "").lower()
+    # Chair interrupt ("throw something") — hold silence until Next / Start / Resume.
+    if r in ("chair", "interrupted"):
+        STATE.awaiting_chair_floor = True
+
+    # Redirect / handoff assign a new turn immediately after this; never queue a second assignment.
+    should_continue = not STATE.paused and r not in ("chair", "interrupted", "redirect", "handoff")
+    if should_continue:
+        asyncio.create_task(_debate_auto_continue())
+
+
+def _live_nodes_ready() -> bool:
+    for bid, d in STATE.debaters.items():
+        if not d.connected:
+            continue
+        if bid in NODES:
+            return True
+    return False
+
+
+async def _floor_idle_watchdog() -> None:
+    """If nobody has the floor but nodes are connected, assign the next speaker (unless paused / interrupt hold)."""
+    while True:
+        try:
+            await asyncio.sleep(1.2)
+            if STATE.paused or STATE.awaiting_chair_floor:
+                continue
+            if STATE.active_turn is not None:
+                continue
+            if not _live_nodes_ready():
+                continue
+            await start_next_turn()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            await asyncio.sleep(1.0)
+
+
+@app.on_event("startup")
+async def _startup_floor_watchdog() -> None:
+    asyncio.create_task(_floor_idle_watchdog())
 
 
 async def kick_debater(debater_id: str) -> None:
@@ -362,6 +536,8 @@ async def ws_endpoint(ws: WebSocket) -> None:
         if kind == ClientKind.chair:
             CHAIRS.discard(ws)
         if kind == ClientKind.node and your_id:
+            if STATE.active_turn and STATE.active_turn.debater_id == your_id:
+                await force_end_turn(reason="disconnected")
             NODES.pop(your_id, None)
             STATE.set_connected(your_id, False)
             await broadcast_roster()
@@ -371,8 +547,13 @@ async def _chair_loop(ws: WebSocket) -> None:
     while True:
         raw = await ws.receive_text()
         obj = json.loads(raw)
+        raw_type = obj.get("type")
+        if isinstance(raw_type, str):
+            raw_str = raw_type.strip()
+        else:
+            raw_str = raw_type
         try:
-            t = MsgType(obj.get("type"))
+            t = MsgType(raw_str) if raw_str not in (None, "") else None
         except Exception:
             t = None
         payload = obj.get("payload") or {}
@@ -421,10 +602,12 @@ async def _chair_loop(ws: WebSocket) -> None:
             await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
 
         elif t == MsgType.chair_start:
+            STATE.awaiting_chair_floor = False
             await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_start()})
             await start_next_turn()
 
         elif t == MsgType.chair_next:
+            STATE.awaiting_chair_floor = False
             await start_next_turn()
 
         elif t == MsgType.chair_pause:
@@ -436,6 +619,7 @@ async def _chair_loop(ws: WebSocket) -> None:
 
         elif t == MsgType.chair_resume:
             STATE.paused = False
+            STATE.awaiting_chair_floor = False
             await broadcast_to_chairs(MsgType.announce, {"text": "Confucius says: Resume. Try not to be wrong so loudly."})
 
         elif t == MsgType.chair_interrupt:
@@ -449,12 +633,14 @@ async def _chair_loop(ws: WebSocket) -> None:
             await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_redirect()})
             # hard-stop current speaker if needed
             if STATE.active_turn and STATE.active_turn.debater_id == p.debater_id:
-                await force_end_turn(reason=p.reason or "redirect")
+                await force_end_turn(reason="redirect")
             # immediately re-assign a new turn to that speaker with new instruction
             ws_node = NODES.get(p.debater_id)
             if ws_node:
+                STATE.awaiting_chair_floor = False
                 turn = Turn(turn_id=new_id("turn"), debater_id=p.debater_id, round="redirect", instruction=p.redirect)
                 STATE.active_turn = turn
+                roster = [DebaterInfo(**x) for x in STATE.roster()]
                 payload2 = TurnAssignedPayload(
                     turn_id=turn.turn_id,
                     debater_id=turn.debater_id,
@@ -466,6 +652,7 @@ async def _chair_loop(ws: WebSocket) -> None:
                     venue=STATE.venue,
                     spiral=STATE.spiral,
                     event=STATE.last_event,
+                    debaters=roster,
                     max_tokens=192,
                     soft_time_ms=120_000,
                     activity_ping_ms=750,
@@ -482,11 +669,57 @@ async def _chair_loop(ws: WebSocket) -> None:
             else:
                 await kick_debater(p.debater_id)
 
+        elif t == MsgType.chair_archive_debate:
+            await archive_debate_and_notify()
+
+        elif t == MsgType.chair_set_speaker_mode:
+            p = ChairSpeakerModePayload(**payload)
+            STATE.speaker_mode = p.mode
+            label = "Holy Hand Grenade (random)" if p.mode == "holy_hand_grenade" else "orderly cycle"
+            await broadcast_to_chairs(
+                MsgType.announce,
+                {"text": f"Confucius says: Next-speaker rule is now {label}."},
+            )
+
+        elif t == MsgType.chair_set_auto_advance:
+            # Stored for API compatibility; turn flow always continues while unpaused (see _debate_auto_continue).
+            p = ChairAutoAdvancePayload(**payload)
+            STATE.auto_advance = p.enabled
+            await broadcast_to_chairs(
+                MsgType.announce,
+                {
+                    "text": (
+                        "Confucius says: Automatic turns flow after each speech."
+                        if p.enabled
+                        else "Confucius says: Automatic turns are OFF — use Next when you are ready."
+                    )
+                },
+            )
+
+        elif t == MsgType.chair_call_debater:
+            await chair_call_debater(ws, payload)
+
+        elif t == MsgType.chair_confucius_pronounce:
+            await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_pronouncement()})
+
+        elif raw_str == "chair_call_debater":
+            await chair_call_debater(ws, payload)
+
+        elif raw_str == "chair_confucius_pronounce":
+            await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_pronouncement()})
+
+        elif raw_str == "chair_summon_tim":
+            # Dispatch by wire string so VAR works even if MsgType(...) failed (stale process / enum mismatch).
+            STATE.last_event = {"kind": "var", "label": "Tim"}
+            ev = transcript("event", STATE.last_event)
+            await broadcast_to_chairs(MsgType.transcript_append, {"event": ev})
+            await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_tim_var()})
+
         else:
             await ws_send(
                 ws,
                 MsgType.error,
-                ErrorPayload(message="Unknown chair command", detail={"type": obj.get("type")}).model_dump(),
+                ErrorPayload(message="Unknown chair command", detail={"type": raw_str}).model_dump(),
             )
 
 
@@ -532,6 +765,8 @@ async def _node_loop(ws: WebSocket, debater_id: str) -> None:
             )
             await broadcast_to_chairs(MsgType.transcript_append, {"event": event})
             STATE.active_turn = None
+            if not STATE.paused:
+                asyncio.create_task(_debate_auto_continue())
 
         else:
             await ws_send(
