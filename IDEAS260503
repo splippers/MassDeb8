@@ -1,0 +1,134 @@
+# CURSORREF: IDEAS260503
+This document consolidates the validated ideas from the 03 May 2026 SIC design session.  
+Cursor must treat this as an authoritative structural reference for UX scaffolding, system behaviour, and multi-device logic.
+
+---
+
+# I. SESSION MODE (MANDATORY)
+The user (Jonathan) provides ideas.  
+Cursor must not invent new concepts.  
+Cursor must implement only what is described here.  
+Copilot’s refinements have already been applied and are final.
+
+Cursor must operate in **interpret → scaffold → extend** mode, not **invent → propose** mode.
+
+---
+
+# II. UX REDESIGN: ATRIUM-BASED SETUP FLOW
+Replace the existing “name + empty hall” startup with a **three‑stage atrium sequence**.
+
+## A. Atrium Structure
+Cursor must scaffold three distinct screens/components:
+
+1. **Atrium I — Venue Selection**
+   - User selects the debate location.
+   - Use placeholder panels only.
+   - Atmosphere concept: *mahogany and rich leather* (no styling yet).
+
+2. **Atrium II — Debater/Senator Selection**
+   - Animated “category cupboards” (placeholder boxes) that open to reveal scrollable portrait grids.
+   - Four categories:
+     - Philosophers  
+     - Mixed Bag  
+     - Hideous Proclivities  
+     - A context‑aware category chosen by the system (placeholder only)
+
+3. **Atrium III — Confirmation**
+   - Display chosen venue + roster.
+   - Provide “Enter Arena” button.
+
+## B. Structural Requirements
+Cursor must:
+- Use **semantic containers** (e.g., `AtriumContainer`, `CupboardGrid`, `PortraitScrollArea`).
+- Use **placeholder components** with labels (e.g., `<PlaceholderImage label="Portrait" />`).
+- Use **minimal CSS** (no colours, no animations, no transitions).
+- Keep all components modular and extensible.
+- Include a subtle progress indicator (e.g., “Atrium II of III”).
+
+---
+
+# III. PLACEHOLDER SCAFFOLDING RULES
+Cursor must not attempt final UI design.
+
+Cursor must:
+- Use **wireframe‑first** layout.
+- Use **flexbox or grid** for predictable placement.
+- Include **TODO comments** for future graphical assets.
+- Provide **dummy data arrays** for portraits and categories.
+- Ensure all placeholder elements have **IDs** for future wiring.
+
+Cursor must not:
+- Add decorative styling.
+- Add animations.
+- Add colour palettes.
+- Add icons.
+- Add transitions.
+
+---
+
+# IV. LAN MULTI-DEVICE SUPPORT (PLACEHOLDER ONLY)
+SIC must support joining an active debate session from another device on the same LAN.
+
+Cursor must scaffold:
+- A LAN scan for a **session descriptor** on a known port.
+- If found → show “Join Existing Debate Session”.
+- If not found → hide the option.
+
+Cursor must not implement:
+- Real networking logic.
+- Complex discovery protocols.
+
+This is placeholder scaffolding only.
+
+---
+
+# V. VAR OVERRULE MECHANISM
+TMI (Thinking Man’s Idiot) remains the VAR.
+
+The user may escalate beyond VAR via the:
+
+## **Court of Public Opinion**
+Cursor must treat this as:
+- A bureaucratic escalation tier above VAR.
+- Not replacing VAR.
+- Not weakening VAR.
+- Adding procedural absurdity.
+
+This tier is informally known as the:
+
+### **Philosophical Supreme Court of Vibes**
+(This phrase is original to this session and must be preserved.)
+
+Cursor must scaffold:
+- Placeholder logic hooks for this escalation path.
+- No implementation of final behaviour.
+
+---
+
+# VI. TONE & AESTHETIC REQUIREMENTS
+Cursor must preserve the following conceptual tone anchors:
+
+- Gothic architecture  
+- Mahogany and rich leather  
+- Ritualistic atrium progression  
+- Theatrical seriousness with comedic collapse  
+- Personas remain in character  
+- Bureaucratic absurdity  
+- Clean, minimal UX scaffolding  
+- Chaos escalation without visual clutter  
+
+Cursor must not attempt to render these visually yet.
+
+---
+
+# VII. IMPLEMENTATION BEHAVIOUR FOR CURSOR
+Cursor must:
+- Follow the structural rules above.
+- Avoid creative invention.
+- Build placeholder scaffolding only.
+- Keep all components modular and extensible.
+- Treat this document as a governing reference for SIC’s setup flow and multi-device logic.
+
+---
+
+# END OF CURSORREF: IDEAS260503
