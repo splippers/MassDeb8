@@ -71,8 +71,8 @@ export function TitleScreen() {
           </button>
         </p>
         <div className="sic-title-actions">
-          <Link className="sic-btn sic-btn-primary" to="/lobby">
-            Enter the hall
+          <Link className="sic-btn sic-btn-primary" to="/atrium">
+            Enter the Atrium
           </Link>
           <Link className="sic-btn sic-btn-primary" to="/arena">
             Enter the empty hall
