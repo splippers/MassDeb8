@@ -1,135 +1,120 @@
-# massdeb8  -- AKA Symposium of Infinite Contention "[SIC]"
+# Symposium of Infinite Contention (SIC)
+Also known internally as: MassDeb8
 
-A LAN **virtual debating arena** where multiple Ollama-backed LLMs join as **classic philosophers**, speak in turns, and can be **chaired/interrupted live** by the user (as **Confucius**, in a Monty Python-ish style). Slow hardware is a feature: enable **Ent Mode** to make ponderous delivery feel intentional.
+A LAN-based virtual debating arena where multiple LLMs, cast as classic philosophers, engage in structured argument under live human moderation.
 
-This project is influenced by Monty Python, specifically The Philosophers' Football Match:
+Type: Meta-System / Simulation  
+Intent: Playground + Portfolio Signal  
+Audience: Developers, researchers, and curious humans
 
-https://youtu.be/QXOKsJViHtY?si=7imj_P3lQog5hRae
+==================================================
 
-## Quick start (local machine)
+OVERVIEW
 
-Prereqs:
-- Python 3.10+
-- Ollama running on each debater node (default `http://localhost:11434`)
+Symposium of Infinite Contention (SIC) is a theatrical, local-network debating arena in which multiple Ollama-backed language models participate as philosophers, taking turns to argue, respond, and pontificate.
 
-Create a virtualenv:
+A human user acts as the Chair — presented diegetically as Confucius — with the power to interrupt, redirect, and moderate the flow of discourse in real time.
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-```
+This project is intentionally playful, satirical, and a little botched. That is not a bug.
 
-If you prefer `uv`, you can still use it, but `requirements.txt` is the most portable.
+==================================================
 
-Run the Arena server:
+WHY THIS EXISTS
 
-```bash
-.venv/bin/uvicorn arena.app:app --host 0.0.0.0 --port 8787
-```
+Most multi-agent LLM demos assume:
+- Unlimited seriousness
+- Perfect hardware
+- Passive observers
+- Endless output
 
-**One-liner on a LAN box (e.g. Eddie):** from the repo root, after `python3 -m venv .venv` + `pip install -r requirements.txt` and Node/npm for the UI build:
+SIC asks a different question:
 
-```bash
-chmod +x scripts/start_arena.sh
-./scripts/start_arena.sh
-```
+What if machine discourse were:
+- Slow on purpose
+- Interruptible
+- Moderated
+- Theatrical
+- Slightly ridiculous
 
-Optional: `MASSDEB8_PORT=8787` or `SKIP_UI_BUILD=1` if you already ran `cd ui && npm run build`.
+Influenced heavily by Monty Python’s Philosophers’ Football Match, SIC treats argument as performance rather than truth production.
 
-### Chair UI (React — **Symposium of Infinite Contention**)
+==================================================
 
-Prereq for the frontend: **Node.js 20+** and `npm`.
+CORE IDEAS
 
-**Development (two terminals):**
+HUMAN-IN-THE-LOOP AUTHORITY  
+A single Chair controls the arena:
+- Starting and stopping debate
+- Selecting the next speaker
+- Hard-interrupting monologues
+- Redirecting the topic
 
-1. Arena (API + WebSocket), port **8787**:
+SLOWNESS AS A FEATURE  
+Ent Mode deliberately embraces slow, ponderous delivery so that limited hardware feels intentional rather than deficient.
 
-```bash
-.venv/bin/uvicorn arena.app:app --host 0.0.0.0 --port 8787
-```
+PERSONAS OVER MODELS  
+Each debater is defined by a YAML persona, not just a model name. Tone, seriousness, and absurdity are adjustable parameters.
 
-2. Vite dev server (proxies `/api` and `/ws` to the arena):
+DIEGETIC FLAWS  
+Outdated names, strange artefacts, and inconsistent terminology are intentional. This is a world with history, not a pristine demo.
 
-```bash
-cd ui
-npm install
-npm run dev
-```
+==================================================
 
-Open **`http://localhost:5173/`** — title screen → lobby → arena. Paste or fetch the **chair key**, then connect.
+WHAT IS IMPLEMENTED (MVP)
 
-**Remote machine (e.g. another laptop on the LAN):**
+- Arena server with WebSocket coordination
+- React-based Chair UI (lobby, arena, control drawer)
+- Live roster and turn-taking
+- Token streaming into a shared transcript
+- Chair controls: start, next, interrupt, redirect
+- Ent Mode pacing controls
+- Scripted Confucius interjections
+- YAML-based persona system with tone knobs
+- Lightweight LAN security via chair key
 
-- **Production UI (simplest):** on Eddie, build the UI once, run uvicorn with `--host 0.0.0.0`, then on your laptop open **`http://eddie:8787/`** (or `http://<eddie-ip>:8787/`). The browser will use **`ws://eddie:8787/ws`** automatically (same host/port). Ensure **port 8787** is allowed through Eddie’s firewall.
-- **Dev UI:** with Vite configured to listen on the LAN, run `npm run dev` on Eddie and open **`http://eddie:5173/`** from your laptop. Vite proxies `/api` and `/ws` to the arena on localhost; open **port 5173** on the firewall if needed.
+==================================================
 
-**Production (single server):** build the SPA, then run uvicorn; the arena serves the React app at `/`.
+WHAT THIS IS NOT
 
-```bash
-cd ui
-npm install
-npm run build
-cd ..
-.venv/bin/uvicorn arena.app:app --host 0.0.0.0 --port 8787
-```
+- Not a benchmark
+- Not a serious philosophy engine
+- Not a production AI safety framework
+- Not hardened for hostile networks
 
-Open **`http://<arena-ip>:8787/`**. Advanced controls live in **Control Knobs** (drawer).
+It is a sandbox for observing and steering machine discourse.
 
-The old static chair console is still available at **`/legacy`** if needed.
+==================================================
 
-Run a debater node (on the same machine or any LAN machine):
+TECHNICAL SHAPE
 
-```bash
-.venv/bin/python -m node.node --arena ws://<arena-ip>:8787/ws --name "Nietzsche" --persona nietzsche --ollama-model llama3
-```
+- Python backend (FastAPI + WebSockets)
+- Ollama-backed debater nodes (local or LAN)
+- React frontend for Chair control
+- Single-server or LAN-distributed deployment
+- Intentionally permissive trust model (for now)
 
-Run a second node:
+==================================================
 
-```bash
-.venv/bin/python -m node.node --arena ws://<arena-ip>:8787/ws --name "Aristotle" --persona aristotle --ollama-model llama3
-```
+STATUS
 
-## What’s implemented (MVP)
-- React Chair UI (title / lobby / arena) + **Control Knobs** drawer for advanced settings
-- WebSocket join + roster
-- Chair controls: start, next speaker, interrupt (hard stop), redirect
-- Streaming tokens from nodes into a canonical transcript
-- Basic “Ent Mode” pacing knobs
-- Scripted Confucius interjections on key events
-- YAML persona system (`personas/*.yaml`) with seriousness/monty knobs
+This is an actively developed MVP scaffold designed to be extended with richer rulesets, juries, scoring, moderation models, or additional theatrical layers.
 
-## Notes
-- This is an MVP scaffold designed to be extended with richer rulesets, scoring/jury, and better moderation.
-- LAN security is intentionally light for now (single chair key). Add pairing codes/tokens before using on untrusted networks.
+It is complete enough to be interesting, and unfinished enough to remain playful.
 
-## Docs
-- `docs/vision.md`
-- `docs/architecture.md`
-- `docs/protocol.md`
-- `docs/ui-spec.md`
-- `docs/security.md`
-- `docs/personas.md`
-- `docs/manifesto.md`
+==================================================
 
-## CursorRef workflow
-`CursorRef` is treated as **ephemeral** research input. When it contains `personas/*.yaml` blocks, you can safely
-preview changes without overwriting anything:
+A NOTE ON NAMING
 
-```bash
-.venv/bin/python tools/sync_cursorref_personas.py
-```
+MassDeb8 was the original working title.
+Symposium of Infinite Contention is the public-facing name.
 
-To actually apply overwrites, use:
+The residue between the two is intentional.
 
-```bash
-.venv/bin/python tools/sync_cursorref_personas.py --apply
-```
+==================================================
 
-## Two-node demo (Socrates vs Karl Schlegel)
+FINAL WORD
 
-```bash
-chmod +x scripts/demo_socrates_vs_schlegel.sh
-START_ARENA=1 ./scripts/demo_socrates_vs_schlegel.sh
-```
+This project exists because discourse is more interesting when someone can shout “Enough!” and bang the gavel.
 
-Then open the Chair UI and connect using the `chair_key` from `/api/state`.
+Truth is optional.
+Structure is not.
