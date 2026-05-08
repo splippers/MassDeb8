@@ -23,17 +23,31 @@ from shared.protocol import (
 )
 
 
+BACKEND_CHOICES = ("ollama", "opencode")
+
+
+def _create_adapter(backend: str, ollama_base: str, opencode_attach: str, opencode_bin: str):
+    if backend == "ollama":
+        return OllamaAdapter(base_url=ollama_base)
+    from node.opencode_adapter import OpenCodeAdapter
+    return OpenCodeAdapter(attach_url=opencode_attach, opencode_bin=opencode_bin)
+
+
 async def run_node(
     *,
     arena_ws: str,
     name: str,
     persona: str,
+    backend: str,
     ollama_model: str,
     ollama_base: str,
+    opencode_attach: str,
+    opencode_bin: str,
 ) -> None:
     node_id = f"node_{secrets.token_hex(6)}"
-    adapter = OllamaAdapter(base_url=ollama_base)
+    adapter = _create_adapter(backend, ollama_base, opencode_attach, opencode_bin)
     persona_cfg = load_persona(persona)
+    model_label = opencode_bin if backend == "opencode" else ollama_model
 
     async with websockets.connect(arena_ws, ping_interval=20, ping_timeout=20, max_size=2**22) as ws:
         await ws.send(
@@ -44,8 +58,8 @@ async def run_node(
                     node_id=node_id,
                     name=name,
                     persona=persona,
-                    ollama_model=ollama_model,
-                    capabilities={"streaming": True},
+                    ollama_model=model_label,
+                    capabilities={"streaming": True, "backend": backend},
                 ),
             ).model_dump_json()
         )
@@ -93,7 +107,7 @@ async def run_node(
                     turn_id=None,
                     phase="idle",
                     tick=idle_tick,
-                    detail={"ts_ms": int(time.time() * 1000), "persona": persona, "ollama_model": ollama_model},
+                    detail={"ts_ms": int(time.time() * 1000), "persona": persona, "model": model_label},
                 )
 
         idle_task = asyncio.create_task(idle_ping_loop())
@@ -110,7 +124,8 @@ async def run_node(
 
                 if t == MsgType.welcome:
                     your_id = payload.get("your_id")
-                    print(f"[node] connected as {your_id} ({name}/{persona}) using {ollama_model} @ {ollama_base}")
+                    backend_str = f"opencode ({opencode_bin}) @ {opencode_attach}" if backend == "opencode" else f"ollama ({ollama_model}) @ {ollama_base}"
+                    print(f"[node] connected as {your_id} ({name}/{persona}) using {backend_str}")
 
                 elif t == MsgType.turn_assigned:
                     p = TurnAssignedPayload(**payload)
@@ -180,7 +195,8 @@ async def run_node(
                                     "ts_ms": int(time.time() * 1000),
                                     "chars_out": chars_out,
                                     "elapsed_s": round(time.monotonic() - gen_started, 2),
-                                    "ollama_model": ollama_model,
+                                    "model": model_label,
+                                    "backend": backend,
                                 },
                             )
 
@@ -194,7 +210,7 @@ async def run_node(
                             min(1.3, 0.55 + (monty_factor * 0.55) - (seriousness * 0.25) + (float(p.spiral) * 0.25)),
                         )
                         async for delta in adapter.stream_generate(
-                            model=ollama_model,
+                            model=model_label,
                             prompt=prompt,
                             stop=stop_event,
                             temperature=temperature,
@@ -232,7 +248,7 @@ async def run_node(
                                 turn_id=p.turn_id,
                                 debater_id=p.debater_id,
                                 text=final_text,
-                                meta={"persona": persona, "ollama_model": ollama_model},
+                                meta={"persona": persona, "model": model_label, "backend": backend},
                             ),
                         ).model_dump_json()
                     )
@@ -268,12 +284,18 @@ async def run_node(
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description="MassDeb8 debater node — Ollama or OpenCode Big-Pickle")
     ap.add_argument("--arena", required=True, help="Arena websocket URL, e.g. ws://192.168.1.10:8787/ws")
     ap.add_argument("--name", required=True, help="Display name, e.g. Nietzsche")
     ap.add_argument("--persona", required=True, help="Persona key, e.g. nietzsche")
-    ap.add_argument("--ollama-model", required=True, help="Ollama model name, e.g. llama3")
+    ap.add_argument("--backend", default="ollama", choices=BACKEND_CHOICES,
+                    help="LLM backend: ollama (default) or opencode (Big-Pickle)")
+    ap.add_argument("--ollama-model", default="llama3", help="Ollama model name (default: llama3)")
     ap.add_argument("--ollama-base", default="http://localhost:11434", help="Ollama base URL")
+    ap.add_argument("--opencode-attach", default="http://127.0.0.1:4096",
+                    help="OpenCode serve attach URL (default: http://127.0.0.1:4096)")
+    ap.add_argument("--opencode-bin", default="opencode",
+                    help="Path to opencode binary (default: opencode)")
     args = ap.parse_args()
 
     asyncio.run(
@@ -281,8 +303,11 @@ def main() -> None:
             arena_ws=args.arena,
             name=args.name,
             persona=args.persona,
+            backend=args.backend,
             ollama_model=args.ollama_model,
             ollama_base=args.ollama_base,
+            opencode_attach=args.opencode_attach,
+            opencode_bin=args.opencode_bin,
         )
     )
 
