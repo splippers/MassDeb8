@@ -30,7 +30,7 @@ export function TitleScreen() {
     return (
       <div className="sic-title">
         <form className="sic-title-inner sic-handle-gate fade-in" onSubmit={onSubmitHandle} autoComplete="username">
-          <p className="sic-eyebrow">massdeb8</p>
+          <p className="sic-eyebrow">Teddryck</p>
           <h1 className="sic-display">Symposium of Infinite Contention</h1>
           <p className="sic-muted sic-handle-lead">Before you enter, choose how you would like to be addressed.</p>
           <label className="sic-label sic-handle-label" htmlFor="user-handle">

@@ -21,3 +21,14 @@ Thumbs.db
 # Frontend (Vite)
 ui/node_modules/
 ui/dist/
+
+# Local rolling log (FLINTNEEDLE / CSOP); not committed
+TRANSCRIPT.md
+
+# Runtime artifacts
+.arena-pids
+.project-status
+=*
+
+# Scratch/temp files that should never be committed
+API.md

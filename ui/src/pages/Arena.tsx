@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ControlKnobs } from '../components/ControlKnobs'
 import { DebatePortraitStrip } from '../components/DebatePortraitStrip'
@@ -6,6 +6,7 @@ import { EmptyChamber } from '../components/EmptyChamber'
 import { LiveStreamPopout } from '../components/LiveStreamPopout'
 import { TopicTicker } from '../components/TopicTicker'
 import { useChair } from '../context/ChairContext'
+
 export function Arena() {
   const {
     chairKey,
@@ -16,18 +17,31 @@ export function Arena() {
     disconnect,
     send,
     debaters,
-    speakerName,
     transcriptLines,
     liveStreams,
     activityStripText,
     pinnedFloorText,
     debateTopic,
     floorDebaterId,
+    speakerName,
   } = useChair()
 
   const [knobsOpen, setKnobsOpen] = useState(false)
   const [targetId, setTargetId] = useState('')
   const [redirectText, setRedirectText] = useState('')
+  const [gavelFlash, setGavelFlash] = useState(false)
+  const transcriptEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [transcriptLines])
+
+  const doGavel = useCallback(() => {
+    send('chair_gavel', {})
+    setGavelFlash(false)
+    requestAnimationFrame(() => setGavelFlash(true))
+    setTimeout(() => setGavelFlash(false), 600)
+  }, [send])
 
   useEffect(() => {
     if (sessionLoading) return
@@ -56,72 +70,72 @@ export function Arena() {
   }, [debaters])
 
   const doRedirect = useCallback(() => {
-    if (!targetId) return
+    if (!targetId || !redirectText.trim()) return
     send('chair_redirect', { debater_id: targetId, redirect: redirectText, reason: 'chair' })
+    setRedirectText('')
   }, [redirectText, send, targetId])
 
   const archiveDebate = useCallback(() => {
     if (!connected) return
-    if (!window.confirm('Archive this debate on the server and clear the live transcript?')) return
+    if (!window.confirm('Archive this debate and clear the transcript?')) return
     send('chair_archive_debate', {})
   }, [connected, send])
 
   return (
-    <div className="sic-arena">
+    <div className={`sic-arena${gavelFlash ? ' sic-arena--gavel-flash' : ''}`}>
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="sic-arena-header">
-        <TopicTicker text={debateTopic} />
-        <div className="sic-var-strip">
-          <button
-            type="button"
-            className="sic-var-btn"
-            disabled={!connected}
-            title="Summon TIM / full VAR review when the debate overheats"
-            onClick={() => send('chair_summon_tim', {})}
-          >
-            VAR — Summon Tim
-          </button>
-          <span className="sic-var-strip-hint">Pitch-side review when rhetoric runs hot.</span>
-        </div>
-        <div className="sic-arena-header-inner">
-        <div className="sic-arena-header-row">
-          <div className="sic-brand-group">
-            <Link className="sic-link-quiet" to="/">
-              ←
-            </Link>
-            <span className="sic-eyebrow">Chair</span>
+
+        {/* Row 1: nav + status + gavel + session controls */}
+        <div className="sic-arena-bar">
+          <div className="sic-arena-bar-left">
+            <Link className="sic-link-quiet" to="/" title="Back to title">←</Link>
+            <span className="sic-eyebrow">SIC</span>
             <span className={`sic-pill ${connected ? 'sic-pill-on' : 'sic-pill-off'}`}>
-              {connected ? 'connected' : 'disconnected'}
+              {connected ? 'live' : 'offline'}
             </span>
           </div>
-          <div className="sic-row">
-            <button type="button" className="sic-btn sic-btn-ghost" onClick={() => setKnobsOpen(true)}>
-              Control Knobs
+
+          <div className="sic-arena-bar-center">
+            <button
+              type="button"
+              className="sic-gavel-btn"
+              disabled={!connected}
+              onClick={doGavel}
+              title="Bang the gavel — silence the floor"
+            >
+              ⚖ ORDER!
             </button>
             <button
               type="button"
-              className="sic-btn"
-              title="Copy the live transcript into a server archive and clear the scroll"
+              className="sic-var-inline-btn"
               disabled={!connected}
-              onClick={archiveDebate}
+              title="Summon VAR — Tim reviews when rhetoric runs hot"
+              onClick={() => send('chair_summon_tim', {})}
             >
-              Archive &amp; clear
+              VAR
             </button>
-            {!connected ? (
-              <button type="button" className="sic-btn sic-btn-primary" onClick={connect}>
-                Connect
-              </button>
-            ) : (
-              <button type="button" className="sic-btn" onClick={disconnect}>
-                Disconnect
-              </button>
-            )}
+          </div>
+
+          <div className="sic-arena-bar-right">
+            <button type="button" className="sic-btn sic-btn-ghost" onClick={() => setKnobsOpen(true)}>
+              Knobs
+            </button>
+            <button type="button" className="sic-btn sic-btn-ghost" disabled={!connected} onClick={archiveDebate}>
+              Archive
+            </button>
+            {!connected
+              ? <button type="button" className="sic-btn sic-btn-primary" onClick={connect}>Connect</button>
+              : <button type="button" className="sic-btn sic-btn-ghost" onClick={disconnect}>Disconnect</button>
+            }
           </div>
         </div>
-        <div className="sic-floor">
-          <span className="sic-muted">Floor</span>
-          <span className="sic-floor-body">{pinnedFloorText}</span>
-        </div>
 
+        {/* Row 2: topic ticker */}
+        <TopicTicker text={debateTopic} />
+
+        {/* Row 3: portrait strip */}
         <DebatePortraitStrip
           debaters={portraitRow}
           floorDebaterId={floorDebaterId}
@@ -129,106 +143,74 @@ export function Arena() {
           send={send}
         />
 
-        {sessionLoading ? <p className="sic-banner sic-banner-muted">Loading chair session…</p> : null}
-        {!sessionLoading && sessionError ? <p className="sic-banner sic-banner-warn">{sessionError}</p> : null}
-        {!sessionLoading && !chairKey.trim() ? (
-          <p className="sic-banner sic-banner-warn">
-            No chair key yet. Open the lobby or ensure the arena is running so /api/state can provide one.
-          </p>
-        ) : null}
-        </div>
+        {/* Banners (errors / loading) */}
+        {sessionLoading && <p className="sic-banner sic-banner-muted">Loading session…</p>}
+        {!sessionLoading && sessionError && <p className="sic-banner sic-banner-warn">{sessionError}</p>}
+        {!sessionLoading && !chairKey.trim() && (
+          <p className="sic-banner sic-banner-warn">No chair key — is the arena running?</p>
+        )}
       </header>
 
-      <div className="sic-arena-grid">
-        <aside className="sic-panel sic-rail sic-rail-roster">
-          <h2 className="sic-h2">Roster</h2>
-          {!debaters.length ? (
-            <p className="sic-muted">(none yet)</p>
-          ) : (
-            <ul className="sic-roster">
-              {debaters.map((d) => (
-                <li key={d.debater_id} className="sic-roster-row">
-                  <div>
-                    <strong>{d.name}</strong>{' '}
-                    <span className="sic-muted">({d.persona || '?'})</span>
-                  </div>
-                  <div className="sic-muted">
-                    {d.connected ? 'online' : 'offline'} · {d.ollama_model || ''}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </aside>
+      {/* ── Transcript ──────────────────────────────────────────────────── */}
+      <main className="sic-arena-main">
+        {showEmptyChamber && <EmptyChamber onOpenKnobs={() => setKnobsOpen(true)} />}
+        <div className="sic-transcript">
+          {transcriptLines.map((line) => (
+            <div key={line.id} className="sic-transcript-line">{line.text}</div>
+          ))}
+          <div ref={transcriptEndRef} />
+        </div>
+      </main>
 
-        <main className="sic-panel sic-stage">
-          <div className="sic-activity">{activityStripText}</div>
-          {showEmptyChamber ? <EmptyChamber onOpenKnobs={() => setKnobsOpen(true)} /> : null}
-          <div className="sic-transcript">
-            {transcriptLines.map((line) => (
-              <div key={line.id} className="sic-transcript-line">
-                {line.text}
-              </div>
-            ))}
+      {/* ── Control bar ─────────────────────────────────────────────────── */}
+      <footer className="sic-arena-footer">
+        <div className="sic-footer-floor">
+          {pinnedFloorText}
+        </div>
+        <div className="sic-footer-controls">
+          <div className="sic-footer-playback">
+            <button type="button" className="sic-btn sic-btn-primary" disabled={!connected} onClick={() => send('chair_start')}>Start</button>
+            <button type="button" className="sic-btn" disabled={!connected} onClick={() => send('chair_next')}>Next</button>
+            <button type="button" className="sic-btn" disabled={!connected} onClick={() => send('chair_pause')}>Pause</button>
+            <button type="button" className="sic-btn" disabled={!connected} onClick={() => send('chair_resume')}>Resume</button>
           </div>
-        </main>
-
-        <aside className="sic-panel sic-rail sic-rail-actions">
-          <h2 className="sic-h2">Arena rail</h2>
-          <p className="sic-muted">Minimal controls. Everything else lives in Control Knobs.</p>
-          <div className="sic-row sic-stack">
-            <button type="button" className="sic-btn sic-btn-primary" disabled={!connected} onClick={() => send('chair_start')}>
-              Start
-            </button>
-            <button type="button" className="sic-btn" disabled={!connected} onClick={() => send('chair_next')}>
-              Next
-            </button>
-            <button type="button" className="sic-btn" disabled={!connected} onClick={() => send('chair_pause')}>
-              Pause
-            </button>
-            <button type="button" className="sic-btn" disabled={!connected} onClick={() => send('chair_resume')}>
-              Resume
-            </button>
-          </div>
-          <label className="sic-label">Target</label>
-          <select className="sic-input" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-            <option value="">— select debater —</option>
-            {onlineDebaters.map((d) => (
-              <option key={d.debater_id} value={d.debater_id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-          <div className="sic-row sic-stack">
-            <button
-              type="button"
-              className="sic-btn sic-btn-danger"
-              disabled={!connected || !targetId}
-              onClick={() => send('chair_interrupt', { debater_id: targetId, mode: 'hard_stop', reason: 'chair' })}
+          <div className="sic-footer-target">
+            <select
+              className="sic-input sic-footer-select"
+              value={targetId}
+              onChange={(e) => setTargetId(e.target.value)}
+              disabled={!connected || !onlineDebaters.length}
             >
+              <option value="">— target —</option>
+              {onlineDebaters.map((d) => (
+                <option key={d.debater_id} value={d.debater_id}>{d.name}</option>
+              ))}
+            </select>
+            <button type="button" className="sic-btn sic-btn-danger" disabled={!connected || !targetId}
+              onClick={() => send('chair_interrupt', { debater_id: targetId, mode: 'hard_stop', reason: 'chair' })}>
               Interrupt
             </button>
-            <button
-              type="button"
-              className="sic-btn sic-btn-danger"
-              disabled={!connected || !targetId}
-              onClick={() => send('chair_kick', { debater_id: targetId })}
-            >
+            <button type="button" className="sic-btn sic-btn-danger" disabled={!connected || !targetId}
+              onClick={() => send('chair_kick', { debater_id: targetId })}>
               Kick
             </button>
           </div>
-          <textarea
-            className="sic-textarea"
-            rows={3}
-            placeholder="Redirect instruction…"
-            value={redirectText}
-            onChange={(e) => setRedirectText(e.target.value)}
-          />
-          <button type="button" className="sic-btn" disabled={!connected || !targetId} onClick={doRedirect}>
-            Redirect
-          </button>
-        </aside>
-      </div>
+          <div className="sic-footer-redirect">
+            <input
+              className="sic-input sic-footer-redirect-input"
+              placeholder="Redirect…"
+              value={redirectText}
+              onChange={(e) => setRedirectText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && doRedirect()}
+              disabled={!connected || !targetId}
+            />
+            <button type="button" className="sic-btn" disabled={!connected || !targetId || !redirectText.trim()} onClick={doRedirect}>
+              →
+            </button>
+          </div>
+        </div>
+        <div className="sic-footer-activity">{activityStripText}</div>
+      </footer>
 
       <LiveStreamPopout liveStreams={liveStreams} speakerName={speakerName} />
 
@@ -236,8 +218,6 @@ export function Arena() {
         type="button"
         className={`sic-knobs-tab ${knobsOpen ? 'sic-knobs-tab-open' : ''}`}
         aria-expanded={knobsOpen}
-        aria-controls="sic-control-knobs-panel"
-        title={knobsOpen ? 'Close Control Knobs' : 'Open Control Knobs'}
         onClick={() => setKnobsOpen((v) => !v)}
       >
         Knobs

@@ -23,12 +23,29 @@ from shared.protocol import (
 )
 
 
-BACKEND_CHOICES = ("ollama", "opencode")
+BACKEND_CHOICES = ("ollama", "opencode", "jonotron", "openai", "anthropic")
 
 
-def _create_adapter(backend: str, ollama_base: str, opencode_attach: str, opencode_bin: str):
+def _create_adapter(
+    backend: str,
+    ollama_base: str,
+    opencode_attach: str,
+    opencode_bin: str,
+    jonotron_url: str,
+    api_key: str | None = None,
+    openai_base_url: str | None = None,
+):
     if backend == "ollama":
         return OllamaAdapter(base_url=ollama_base)
+    if backend == "jonotron":
+        from node.jonotron_adapter import JonotronAdapter
+        return JonotronAdapter(base_url=jonotron_url)
+    if backend == "openai":
+        from node.openai_adapter import OpenAIAdapter
+        return OpenAIAdapter(api_key=api_key, base_url=openai_base_url)
+    if backend == "anthropic":
+        from node.anthropic_adapter import AnthropicAdapter
+        return AnthropicAdapter(api_key=api_key)
     from node.opencode_adapter import OpenCodeAdapter
     return OpenCodeAdapter(attach_url=opencode_attach, opencode_bin=opencode_bin)
 
@@ -43,11 +60,20 @@ async def run_node(
     ollama_base: str,
     opencode_attach: str,
     opencode_bin: str,
+    jonotron_url: str,
+    model: str | None = None,
+    api_key: str | None = None,
+    openai_base_url: str | None = None,
 ) -> None:
     node_id = f"node_{secrets.token_hex(6)}"
-    adapter = _create_adapter(backend, ollama_base, opencode_attach, opencode_bin)
+    adapter = _create_adapter(backend, ollama_base, opencode_attach, opencode_bin, jonotron_url, api_key, openai_base_url)
     persona_cfg = load_persona(persona)
-    model_label = opencode_bin if backend == "opencode" else ollama_model
+    if model:
+        model_label = model
+    elif backend == "opencode":
+        model_label = opencode_bin
+    else:
+        model_label = ollama_model
 
     async with websockets.connect(arena_ws, ping_interval=20, ping_timeout=20, max_size=2**22) as ws:
         await ws.send(
@@ -284,18 +310,26 @@ async def run_node(
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="MassDeb8 debater node — Ollama or OpenCode Big-Pickle")
+    ap = argparse.ArgumentParser(description="MassDeb8 debater node — Ollama, OpenCode, OpenAI, or Anthropic")
     ap.add_argument("--arena", required=True, help="Arena websocket URL, e.g. ws://192.168.1.10:8787/ws")
     ap.add_argument("--name", required=True, help="Display name, e.g. Nietzsche")
     ap.add_argument("--persona", required=True, help="Persona key, e.g. nietzsche")
     ap.add_argument("--backend", default="ollama", choices=BACKEND_CHOICES,
-                    help="LLM backend: ollama (default) or opencode (Big-Pickle)")
+                    help="LLM backend: ollama (default), opencode, jonotron, openai, anthropic")
+    ap.add_argument("--model", default=None,
+                    help="Model name for openai/anthropic backends (e.g. gpt-4o, claude-opus-4-7)")
+    ap.add_argument("--api-key", default=None,
+                    help="API key for openai/anthropic (falls back to OPENAI_API_KEY / ANTHROPIC_API_KEY env vars)")
+    ap.add_argument("--openai-base-url", default=None,
+                    help="Optional base URL for OpenAI-compatible endpoints")
     ap.add_argument("--ollama-model", default="llama3", help="Ollama model name (default: llama3)")
     ap.add_argument("--ollama-base", default="http://localhost:11434", help="Ollama base URL")
     ap.add_argument("--opencode-attach", default="http://127.0.0.1:4096",
                     help="OpenCode serve attach URL (default: http://127.0.0.1:4096)")
     ap.add_argument("--opencode-bin", default="opencode",
                     help="Path to opencode binary (default: opencode)")
+    ap.add_argument("--jonotron-url", default="http://eddie:8011",
+                    help="Jonotron harness base URL (default: http://eddie:8011)")
     args = ap.parse_args()
 
     asyncio.run(
@@ -308,6 +342,10 @@ def main() -> None:
             ollama_base=args.ollama_base,
             opencode_attach=args.opencode_attach,
             opencode_bin=args.opencode_bin,
+            jonotron_url=args.jonotron_url,
+            model=args.model,
+            api_key=args.api_key,
+            openai_base_url=args.openai_base_url,
         )
     )
 

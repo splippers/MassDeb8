@@ -25,6 +25,7 @@ from arena.store import Store
 from arena.world import APPROVED_VENUES, venue_by_name
 from shared.protocol import (
     ChairAutoAdvancePayload,
+    ChairSetHallNamePayload,
     ChairCallDebaterPayload,
     ChairInterruptPayload,
     ChairKickPayload,
@@ -206,6 +207,7 @@ def api_archive_get(archive_id: int) -> JSONResponse:
 def api_state() -> JSONResponse:
     return JSONResponse(
         {
+            "chair_key": STATE.chair_key,
             "topic": STATE.topic,
             "paused": STATE.paused,
             "ent_mode": STATE.ent_mode,
@@ -213,7 +215,6 @@ def api_state() -> JSONResponse:
             "tone_override": {"seriousness": STATE.tone_seriousness, "monty_factor": STATE.tone_monty_factor},
             "venue": STATE.venue,
             "spiral": STATE.spiral,
-            "chair_key": STATE.chair_key,
             "hall_name": STATE.hall_name,
             "speaker_mode": STATE.speaker_mode,
             "auto_advance": STATE.auto_advance,
@@ -696,6 +697,11 @@ async def _chair_loop(ws: WebSocket) -> None:
                 },
             )
 
+        elif t == MsgType.chair_set_hall_name:
+            p = ChairSetHallNamePayload(**payload)
+            STATE.hall_name = p.hall_name.strip() or STATE.hall_name
+            await broadcast_to_chairs(MsgType.announce, {"text": f"Confucius says: This chamber is now known as {STATE.hall_name}."})
+
         elif t == MsgType.chair_call_debater:
             await chair_call_debater(ws, payload)
 
@@ -707,6 +713,13 @@ async def _chair_loop(ws: WebSocket) -> None:
 
         elif raw_str == "chair_confucius_pronounce":
             await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_pronouncement()})
+
+        elif raw_str == "chair_gavel":
+            await broadcast_to_chairs(MsgType.announce, {"text": confucius.on_gavel()})
+            if STATE.active_turn and not STATE.active_turn.forced_end.is_set():
+                await force_end_turn(reason="chair")
+            else:
+                STATE.awaiting_chair_floor = True
 
         elif raw_str == "chair_summon_tim":
             # Dispatch by wire string so VAR works even if MsgType(...) failed (stale process / enum mismatch).

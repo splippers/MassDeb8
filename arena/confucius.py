@@ -58,6 +58,17 @@ PRONOUNCE_LINES = [
 ]
 
 
+GAVEL_LINES = [
+    "ORDER! Confucius has banged his gavel. The chamber trembles. The Wi-Fi does not.",
+    "ORDER ORDER ORDER! The gavel does not negotiate.",
+    "ORDER! Silence descends like a wet blanket upon a philosophical bonfire.",
+    "Confucius says: I have banged my gavel. Let all argument cease until the echo fades — and it will not fade quickly.",
+    "ORDER! The Chair asserts dominion. Largely ceremonial. Completely absolute.",
+    "Confucius says: SILENCE! The gavel has spoken. The gavel does not repeat itself. (It does, however, have a second gavel.)",
+    "ORDER! Nobody expected the gavel. NOBODY expects the gavel.",
+    "Confucius says: I banged my gavel. That is not a request. That is a historical event.",
+]
+
 TIM_VAR_LINES = [
     "Confucius says: TIM is summoned. We go to the sideline monitor. Take deep breaths and shallow arguments.",
     "Confucius says: VAR energy detected — TIM enters with cold coffee and colder judgment.",
@@ -110,3 +121,7 @@ def on_tim_var() -> str:
 
 def on_pronouncement() -> str:
     return pick(PRONOUNCE_LINES)
+
+
+def on_gavel() -> str:
+    return pick(GAVEL_LINES)

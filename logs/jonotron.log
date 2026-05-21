@@ -1,0 +1,29 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/mnt/SANDIEGO/Projects/massdeb8/node/node.py", line 354, in <module>
+    main()
+  File "/mnt/SANDIEGO/Projects/massdeb8/node/node.py", line 335, in main
+    asyncio.run(
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/mnt/SANDIEGO/Projects/massdeb8/node/node.py", line 143, in run_node
+    async for raw in ws:
+  File "/mnt/SANDIEGO/Projects/massdeb8/.venv/lib/python3.12/site-packages/websockets/asyncio/connection.py", line 244, in __aiter__
+    yield await self.recv()
+          ^^^^^^^^^^^^^^^^^
+  File "/mnt/SANDIEGO/Projects/massdeb8/.venv/lib/python3.12/site-packages/websockets/asyncio/connection.py", line 324, in recv
+    raise self.protocol.close_exc from self.recv_exc
+websockets.exceptions.ConnectionClosedError: no close frame received or sent
+[node] connected as debater_1bb1748fd89b (Friedrich Schelling/schelling) using ollama (llama3) @ http://localhost:11434
+[node] turn_assigned turn_0e9feb22ca3a round=open (max_tokens=256)
+[node] generation error: Server error '502 Bad Gateway' for url 'http://eddie:8011/api/llm/simple'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+[node] error: database disk image is malformed

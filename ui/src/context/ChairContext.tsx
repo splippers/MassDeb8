@@ -120,7 +120,7 @@ export function ChairProvider({ children }: { children: ReactNode }) {
   const appendTranscript = useCallback((text: string) => {
     setTranscriptLines((prev) => {
       if (isDuplicateTranscriptLine(text, prev)) return prev
-      return [{ id: newTranscriptLineId(), text }, ...prev]
+      return [...prev, { id: newTranscriptLineId(), text }]
     })
   }, [])
 

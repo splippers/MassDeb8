@@ -6,10 +6,12 @@ import { Lobby } from './pages/Lobby'
 import { Arena } from './pages/Arena'
 import { AboutTmi } from './pages/AboutTmi'
 
+const BASENAME = window.location.pathname.startsWith('/sic') ? '/sic' : ''
+
 export default function App() {
   return (
     <ChairProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={BASENAME}>
         <Routes>
           <Route path="/" element={<TitleScreen />} />
           <Route path="/atrium" element={<Atrium />} />

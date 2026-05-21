@@ -33,9 +33,11 @@ class MsgType(str, Enum):
     chair_archive_debate = "chair_archive_debate"
     chair_set_speaker_mode = "chair_set_speaker_mode"
     chair_set_auto_advance = "chair_set_auto_advance"
+    chair_set_hall_name = "chair_set_hall_name"
     chair_summon_tim = "chair_summon_tim"
     chair_call_debater = "chair_call_debater"
     chair_confucius_pronounce = "chair_confucius_pronounce"
+    chair_gavel = "chair_gavel"
     # turn flow
     turn_assigned = "turn_assigned"
     turn_stream = "turn_stream"
@@ -190,6 +192,10 @@ class ChairSpeakerModePayload(BaseModel):
 
 class ChairAutoAdvancePayload(BaseModel):
     enabled: bool
+
+
+class ChairSetHallNamePayload(BaseModel):
+    hall_name: str
 
 
 class ErrorPayload(BaseModel):
